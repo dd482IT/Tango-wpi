@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.neptunedreams</groupId>
+	<artifactId>tango</artifactId>
+	<version>1.0-SNAPSHOT</version>
+	<name>Tango</name>
+	<packaging>jar</packaging>
+	
+	<url>http://maven.apache.org</url>
+	<developers>
+		<developer>
+			<id>SwingGuy1024</id>
+			<name>Miguel Muñoz</name>
+			<email>SwingGuy1024@yahoo.com</email>
+		</developer>
+	</developers>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<checkerVersion>3.0.1</checkerVersion>
+
+		<!-- These properties will be set by the Maven Dependency plugin -->
+		<!--<annotatedJdk>${org.checkerframework:jdk8:jar}</annotatedJdk>-->
+		<!--The above line seems to be of the form groupId:artifactId:jar, but it doesn't find anything there-->
+		<annotatedJdk>${user.home}/.m2/repository/org/checkerframework/jdk8/${checkerVersion}/jdk8-3.0.1.jar</annotatedJdk>
+		<!-- Uncomment to use the Type Annotations compiler. -->
+		<!--<typeAnnotationsJavac>${org.checkerframework:compiler:jar}</typeAnnotationsJavac> -->
+
+		<errorProneJavac>.m2/repository/com/google/errorprone/${checkerVersion}:javac:jar</errorProneJavac>
+	</properties>
+
+	<dependencies>
+
+		<!-- Annotations from the Checker Framework: nullness, interning, locking, ... -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.jetbrains</groupId>
+			<artifactId>annotations</artifactId>
+			<version>13.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.hamcrest</groupId>
+			<artifactId>hamcrest-library</artifactId>
+			<version>1.1</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- If using JDK 8, add the following additional dependencies -->
+		<dependency>
+			<groupId>org.checkerframework</groupId>
+			<artifactId>checker-qual</artifactId>
+			<version>${checkerVersion}</version>
+			<scope>system</scope>
+			<systemPath>${user.home}/.m2/repository/org/checkerframework/checker-qual/3.0.1/checker-qual-3.0.1.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.checkerframework</groupId>
+			<artifactId>checker</artifactId>
+			<version>${checkerVersion}</version>
+			<scope>system</scope>
+			<systemPath>${user.home}/.m2/repository/org/checkerframework/checker/3.0.1/checker-3.0.1.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.checkerframework</groupId>
+			<artifactId>jdk8</artifactId>
+			<version>${checkerVersion}</version>
+			<scope>system</scope>
+			<systemPath>${user.home}/.m2/repository/org/checkerframework/jdk8/3.0.1/jdk8-3.0.1.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>com.google.errorprone</groupId>
+			<artifactId>javac</artifactId>
+			<version>9+181-r4173-1</version>
+		</dependency>
+
+		<!--Google guava-->
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>23.0</version>
+		</dependency>
+
+
+	</dependencies>
+
+
+	<build>
+		<plugins>
+			<!--This is the standard Maven plugin-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<fork>true</fork>
+					<source>1.8</source>
+					<target>1.8</target>
+					<compilerArguments>
+						<Xmaxerrs>10000</Xmaxerrs>
+						<Xmaxwarns>10000</Xmaxwarns>
+						<!--<AsuppressWarnings>uninitialized</AsuppressWarnings>-->
+					</compilerArguments>
+					<compilerArgs>
+						<!--<arg>-AprintErrorStack</arg>-->
+						<!--NullChecker needs this turned on-->
+						<arg>-AassumeAssertionsAreEnabled</arg> <!-- -Aassume... is spelled correctly. -->
+						<!-- location of the annotated JDK, which comes from a Maven dependency -->
+						<!--<arg>-J-Xbootclasspath/p:${errorProneJavac}</arg>-->
+						<arg>-Xbootclasspath/p:${annotatedJdk}</arg>
+						<!-- Uncomment the following line to use the type annotations compiler. -->
+						<!--<arg>-J-Xbootclasspath/p:${typeAnnotationsJavac}</arg> -->
+						<!-- Uncomment the following line to turn type-checking warnings into errors. -->
+						<!-- <arg>-Awarns</arg> -->
+						<arg>-Astubs=checkerframework/stubs</arg> <!-- Suggested by https://github.com/typetools/checker-framework/issues/445 -->
+						<arg>-AstubWarnIfNotFound</arg>
+					</compilerArgs>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.checkerframework</groupId>
+							<artifactId>checker</artifactId>
+							<version>${checkerVersion}</version>
+						</path>
+					</annotationProcessorPaths>
+					<annotationProcessors>
+						<!-- Add all the checkers you want to enable here -->
+
+						<!-- Invoke the NullnessChecker at org.checkerframework.checker.nullness.NullnessChecker -->
+						<!-- There are probably other checkers we should invoke. -->
+						<annotationProcessor>org.checkerframework.checker.nullness.NullnessChecker</annotationProcessor>
+					</annotationProcessors>
+				</configuration>
+				<version>3.8.1</version>
+			</plugin>
+
+			<plugin>
+				<!--This is the Maven dependency plugin.-->
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>properties</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+		
+	</build>
+
+
+</project>
