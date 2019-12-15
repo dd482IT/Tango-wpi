@@ -51,4 +51,16 @@ public enum SwingUtils {
     return new JScrollPane(wrapped, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
   }
 
+  /**
+   * Removes the border on the specified component by calling {@code setBorder(null)}.
+   * The JComponent.setBorder method is improperly annotated. It puts @NonNull on the parameter, which is wrong. This
+   * method works around that problem. It has to be its own method because you can't annoate a x.setBorder() call.
+   *
+   * @param component The component
+   */
+  @SuppressWarnings("argument.type.incompatible")
+  public static void setNoBorder(JComponent component) {
+    component.setBorder(null);
+  }
+
 }
