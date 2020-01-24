@@ -21,16 +21,11 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<checkerVersion>3.0.1</checkerVersion>
-
 		<!-- These properties will be set by the Maven Dependency plugin -->
-		<!--<annotatedJdk>${org.checkerframework:jdk8:jar}</annotatedJdk>-->
-		<!--The above line seems to be of the form groupId:artifactId:jar, but it doesn't find anything there-->
-		<annotatedJdk>${user.home}/.m2/repository/org/checkerframework/jdk8/${checkerVersion}/jdk8-3.0.1.jar</annotatedJdk>
-		<!-- Uncomment to use the Type Annotations compiler. -->
-		<!--<typeAnnotationsJavac>${org.checkerframework:compiler:jar}</typeAnnotationsJavac> -->
-
-		<errorProneJavac>.m2/repository/com/google/errorprone/${checkerVersion}:javac:jar</errorProneJavac>
+		<!--suppress UnresolvedMavenProperty -->
+		<annotatedJdk>${org.checkerframework:jdk8:jar}</annotatedJdk>
+		<!--suppress UnresolvedMavenProperty -->
+		<errorProneJavac>${com.google.errorprone:javac:jar}</errorProneJavac>
 	</properties>
 
 	<dependencies>
@@ -54,26 +49,17 @@
 			<scope>test</scope>
 		</dependency>
 		<!-- If using JDK 8, add the following additional dependencies -->
+		<!-- Annotations from the Checker Framework: nullness, interning, locking, ... -->
 		<dependency>
 			<groupId>org.checkerframework</groupId>
 			<artifactId>checker-qual</artifactId>
-			<version>${checkerVersion}</version>
-			<scope>system</scope>
-			<systemPath>${user.home}/.m2/repository/org/checkerframework/checker-qual/3.0.1/checker-qual-3.0.1.jar</systemPath>
+			<version>3.1.0</version>
 		</dependency>
-		<dependency>
-			<groupId>org.checkerframework</groupId>
-			<artifactId>checker</artifactId>
-			<version>${checkerVersion}</version>
-			<scope>system</scope>
-			<systemPath>${user.home}/.m2/repository/org/checkerframework/checker/3.0.1/checker-3.0.1.jar</systemPath>
-		</dependency>
+		<!-- If using JDK 8, add the following additional dependencies -->
 		<dependency>
 			<groupId>org.checkerframework</groupId>
 			<artifactId>jdk8</artifactId>
-			<version>${checkerVersion}</version>
-			<scope>system</scope>
-			<systemPath>${user.home}/.m2/repository/org/checkerframework/jdk8/3.0.1/jdk8-3.0.1.jar</systemPath>
+			<version>3.1.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.errorprone</groupId>
@@ -108,16 +94,16 @@
 						<!--<AsuppressWarnings>uninitialized</AsuppressWarnings>-->
 					</compilerArguments>
 					<compilerArgs>
-						<!--<arg>-AprintErrorStack</arg>-->
-						<!--NullChecker needs this turned on-->
-						<arg>-AassumeAssertionsAreEnabled</arg> <!-- -Aassume... is spelled correctly. -->
-						<!-- location of the annotated JDK, which comes from a Maven dependency -->
-						<!--<arg>-J-Xbootclasspath/p:${errorProneJavac}</arg>-->
+						<!-- If using JDK 8, use only the two arguments immediately below. -->
+						<arg>-J-Xbootclasspath/p:${errorProneJavac}</arg>
 						<arg>-Xbootclasspath/p:${annotatedJdk}</arg>
-						<!-- Uncomment the following line to use the type annotations compiler. -->
-						<!--<arg>-J-Xbootclasspath/p:${typeAnnotationsJavac}</arg> -->
-						<!-- Uncomment the following line to turn type-checking warnings into errors. -->
-						<!-- <arg>-Awarns</arg> -->
+						<!-- If using JDK 11, remove the two arguments above, remove the
+                 space in the one below, and uncomment it. -->
+						<!-- <arg>-J- -add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg> -->
+
+						<!-- Optionally, -Awarns turns type-checking errors into warnings. -->
+<!--						 <arg>-Awarns</arg> -->
+
 						<arg>-Astubs=checkerframework/stubs</arg> <!-- Suggested by https://github.com/typetools/checker-framework/issues/445 -->
 						<arg>-AstubWarnIfNotFound</arg>
 					</compilerArgs>
@@ -125,7 +111,7 @@
 						<path>
 							<groupId>org.checkerframework</groupId>
 							<artifactId>checker</artifactId>
-							<version>${checkerVersion}</version>
+							<version>3.1.0</version>
 						</path>
 					</annotationProcessorPaths>
 					<annotationProcessors>
