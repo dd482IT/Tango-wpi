@@ -48,7 +48,6 @@
 			<version>1.1</version>
 			<scope>test</scope>
 		</dependency>
-		<!-- If using JDK 8, add the following additional dependencies -->
 		<!-- Annotations from the Checker Framework: nullness, interning, locking, ... -->
 		<dependency>
 			<groupId>org.checkerframework</groupId>
@@ -93,20 +92,6 @@
 						<Xmaxwarns>10000</Xmaxwarns>
 						<!--<AsuppressWarnings>uninitialized</AsuppressWarnings>-->
 					</compilerArguments>
-					<compilerArgs>
-						<!-- If using JDK 8, use only the two arguments immediately below. -->
-						<arg>-J-Xbootclasspath/p:${errorProneJavac}</arg>
-						<arg>-Xbootclasspath/p:${annotatedJdk}</arg>
-						<!-- If using JDK 11, remove the two arguments above, remove the
-                 space in the one below, and uncomment it. -->
-						<!-- <arg>-J- -add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg> -->
-
-						<!-- Optionally, -Awarns turns type-checking errors into warnings. -->
-<!--						 <arg>-Awarns</arg> -->
-
-						<arg>-Astubs=checkerframework/stubs</arg> <!-- Suggested by https://github.com/typetools/checker-framework/issues/445 -->
-						<arg>-AstubWarnIfNotFound</arg>
-					</compilerArgs>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.checkerframework</groupId>
@@ -121,6 +106,20 @@
 						<!-- There are probably other checkers we should invoke. -->
 						<annotationProcessor>org.checkerframework.checker.nullness.NullnessChecker</annotationProcessor>
 					</annotationProcessors>
+					<compilerArgs>
+						<!-- If using JDK 8, use only the two arguments immediately below. -->
+						<arg>-J-Xbootclasspath/p:${errorProneJavac}</arg>
+						<arg>-Xbootclasspath/p:${annotatedJdk}</arg>
+						<!-- If using JDK 11, remove the two arguments above, remove the
+								 space in the one below, and uncomment it. -->
+						<!-- <arg>-J- -add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg> -->
+
+						<!-- Optionally, -Awarns turns type-checking errors into warnings. -->
+						<arg>-Awarns</arg>
+
+						<!--<arg>-Astubs=checkerframework/stubs</arg> &lt;!&ndash; Suggested by https://github.com/typetools/checker-framework/issues/445 &ndash;&gt;-->
+						<!--<arg>-AstubWarnIfNotFound</arg>-->
+					</compilerArgs>
 				</configuration>
 				<version>3.8.1</version>
 			</plugin>

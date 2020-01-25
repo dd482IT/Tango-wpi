@@ -18,30 +18,30 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class RecordModel<R> implements Serializable {
   private final transient List<RecordModelListener> listenerList = new LinkedList<>();
-  
+
   // foundItems should be a RandomAccess list
   private List<@NonNull R> foundItems = new ArrayList<>();
-  private transient int recordIndex = 0;
-  private final Supplier<? extends @NonNull R> constructor;
-  
-  public RecordModel(Supplier<? extends @NonNull R> theConstructor) {
+  private int recordIndex = 0;
+  private final Supplier<@NonNull R> constructor;
+
+  public RecordModel(Supplier<@NonNull R> theConstructor) {
     constructor = theConstructor;
   }
 
   public int getRecordIndex() {
     return recordIndex;
   }
-  
+
   public int getSize() { return foundItems.size(); }
 
   public void addModelListener(RecordModelListener listener) {
     listenerList.add(listener);
   }
-  
+
   public void removeModelListener(RecordModelListener listener) {
     listenerList.remove(listener);
   }
- 
+
   public void setNewList(Collection<? extends R> records) {
     foundItems = new ArrayList<>(records);
     if (foundItems.isEmpty()) {
@@ -78,7 +78,7 @@ public class RecordModel<R> implements Serializable {
     }
     setRecordIndex(nextRecord);
   }
-  
+
   public void goFirst() {
     assert !foundItems.isEmpty();
     setRecordIndex(0);
@@ -153,7 +153,7 @@ public class RecordModel<R> implements Serializable {
       }
     }
   }
-  
+
   private void fireModelListChanged() {
     int size = foundItems.size();
     for (RecordModelListener listener : listenerList) {
