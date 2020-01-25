@@ -16,15 +16,15 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public interface Dao<E, PK, F extends DBField> {
   boolean createTableIfNeeded() throws SQLException;
   
-  Collection<E> getAll(@Nullable F orderBy) throws SQLException;
+  Collection<@NonNull E> getAll(@Nullable F orderBy) throws SQLException;
   
-  Collection<E> find(String text, @Nullable F orderBy) throws SQLException;
-  Collection<E> findAny(@Nullable F orderBy, String... text) throws SQLException;
-  Collection<E> findAll(@Nullable F orderBy, String... text) throws SQLException;
+  Collection<@NonNull E> find(String text, @Nullable F orderBy) throws SQLException;
+  Collection<@NonNull E> findAny(@Nullable F orderBy, String... text) throws SQLException;
+  Collection<@NonNull E> findAll(@Nullable F orderBy, String... text) throws SQLException;
 
-  Collection<E> findInField(String text, @NonNull F findBy, @Nullable F orderBy) throws SQLException;
-  Collection<E> findAnyInField(@NonNull F findBy, @Nullable F orderBy, String... text) throws SQLException;
-  Collection<E> findAllInField(@NonNull F findBy, @Nullable F orderBy, String... text) throws SQLException;
+  Collection<@NonNull E> findInField(String text, @NonNull F findBy, @Nullable F orderBy) throws SQLException;
+  Collection<@NonNull E> findAnyInField(@NonNull F findBy, @Nullable F orderBy, String... text) throws SQLException;
+  Collection<@NonNull E> findAllInField(@NonNull F findBy, @Nullable F orderBy, String... text) throws SQLException;
 
 //  E newEmptyRecord();
 

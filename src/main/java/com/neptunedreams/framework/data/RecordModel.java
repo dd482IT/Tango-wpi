@@ -22,9 +22,9 @@ public class RecordModel<R> implements Serializable {
   // foundItems should be a RandomAccess list
   private List<@NonNull R> foundItems = new ArrayList<>();
   private transient int recordIndex = 0;
-  private final transient Supplier<@NonNull ? extends R> constructor;
+  private final Supplier<? extends @NonNull R> constructor;
   
-  public RecordModel(Supplier<@NonNull ? extends R> theConstructor) {
+  public RecordModel(Supplier<? extends @NonNull R> theConstructor) {
     constructor = theConstructor;
   }
 
@@ -122,7 +122,7 @@ public class RecordModel<R> implements Serializable {
     return emptyRecord;
   }
   
-  public R getRecordAt(int index) {
+  public @NonNull R getRecordAt(int index) {
     return foundItems.get(index);
   }
 
