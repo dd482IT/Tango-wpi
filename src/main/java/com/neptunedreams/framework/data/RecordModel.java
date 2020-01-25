@@ -1,11 +1,11 @@
 package com.neptunedreams.framework.data;
 
-import com.neptunedreams.framework.NonNullSupplier;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Supplier;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
@@ -22,9 +22,9 @@ public class RecordModel<R> implements Serializable {
   // foundItems should be a RandomAccess list
   private List<@NonNull R> foundItems = new ArrayList<>();
   private transient int recordIndex = 0;
-  private final transient NonNullSupplier<? extends R> constructor;
+  private final transient Supplier<@NonNull ? extends R> constructor;
   
-  public RecordModel(NonNullSupplier<? extends R> theConstructor) {
+  public RecordModel(Supplier<@NonNull ? extends R> theConstructor) {
     constructor = theConstructor;
   }
 
