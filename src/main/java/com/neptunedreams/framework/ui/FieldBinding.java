@@ -17,18 +17,16 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  *
  * @author Miguel Mu\u00f1oz
  */
+@SuppressWarnings("unused")
 public abstract class FieldBinding<R, T, C extends Component> {
   private Function<R, T> getter;
-  private BiConsumer<R, T> setter;
   private C editor;
   private final boolean isEditable;
 
-  @SuppressWarnings("JavaDoc")
-  FieldBinding(Function<R, T> aGetter, BiConsumer<R, T> aSetter, C aField, boolean editable) {
+  protected FieldBinding(Function<R, T> aGetter, C aField) {
     getter = aGetter;
-    setter = aSetter;
     editor = aField;
-    isEditable = editable;
+    isEditable = false;
   }
 
   /**
@@ -44,8 +42,9 @@ public abstract class FieldBinding<R, T, C extends Component> {
    * Retrieves the data field value from the dataModel and loads it into the editor.
    * @param dataRecord The dataModel record.
    */
-  public void prepareEditor(R dataRecord) {
-    prepareEditor(getStringValue(getValue(dataRecord)));
+  public final void prepareEditor(R dataRecord) {
+    T loadedValue = getTheValue(dataRecord);
+    loadStringValue(getStringValue(loadedValue));
   }
 
   /**
@@ -69,7 +68,7 @@ public abstract class FieldBinding<R, T, C extends Component> {
    */
   protected abstract T getFieldValue();
   
-  private T readFieldValue() {
+  protected T readFieldValue() {
     return clean(getFieldValue());
   }
 
@@ -83,23 +82,12 @@ public abstract class FieldBinding<R, T, C extends Component> {
   }
 
   /**
-   * Uses the setter to set the specified value into the dataModel record, after cleaning it.
-   * @param record The dataModel record
-   * @param value The value to set
-   */
-  public void setValue(R record, T value) {
-    assert record != null : "Null record";
-    assert value != null : "Null value";
-    setter.accept(record, clean(value));
-  }
-
-  /**
    * Prepare the editor by setting the editor or display component to the specified value. This is declared as a String
    * because that's how both text and numerical data is displayed, but this may be revisited later.
    * Subclasses should implement this for their particular editor component.
    * @param editorValue The editor value, expressed as a String.
    */
-  protected abstract void prepareEditor(String editorValue);
+  protected abstract void loadStringValue(String editorValue);
 
   /**
    * Cleans the value. The default implementation returns the value unchanged, but subclasses should override this
@@ -118,30 +106,52 @@ public abstract class FieldBinding<R, T, C extends Component> {
   String getStringValue(@Nullable T value) { return Objects.toString(value, ""); }
 
   /**
-   * Reads the value in the editor, cleans it, and loads it into the current record.
-   * @param record The record to receive the editor's value
-   */
-  public void saveEdit(R record) {
-    setter.accept(record, readFieldValue());
-  }
-
-  /**
    * Determines if the Binding uses an editable component. 
    * @return true if editable, false otherwise
    */
   public boolean isEditable() {
     return isEditable;
   }
+  
+  public abstract static class EditableFieldBinding<R, T, C extends Component> extends FieldBinding<R, T, C> {
+    private BiConsumer<R, T> setter;
 
-  /**
-   * A Binding to edit a String value, which uses a subclass of JTextComponent (Usually a JTextField or JTextArea)
-   * to display the editable value.
-   * @param <D> The DataModel type.
-   */
-  public static class StringEditableBinding<D> extends FieldBinding<D, String, JTextComponent> {
-    @SuppressWarnings("JavaDoc")
-    StringEditableBinding(Function<D, String> aGetter, BiConsumer<D, String> aSetter, JTextComponent aField) {
-      super(aGetter, aSetter, aField, true);
+    protected EditableFieldBinding(Function<R, T> aGetter, BiConsumer<R, T> aSetter, C aField) {
+      super(aGetter, aField);
+      setter = aSetter;
+    }
+
+    @Override
+    public boolean isEditable() {
+      return true;
+    }
+
+    /**
+     * Reads the value in the editor, cleans it, and loads it into the current record.
+     *
+     * @param record The record to receive the editor's value
+     */
+    public void saveEdit(R record) {
+      setter.accept(record, readFieldValue());
+    }
+
+    /**
+     * Uses the setter to set the specified value into the dataModel record, after cleaning it.
+     *
+     * @param record The dataModel record
+     * @param value  The value to set
+     */
+    public void setValue(R record, T value) {
+      assert record != null : "Null record";
+      assert value != null : "Null value";
+      setter.accept(record, clean(value));
+    }
+  }
+  
+  public static class StringBinding<D> extends FieldBinding<D, String, JLabel> {
+
+    StringBinding(final Function<D, String> aGetter, final JLabel aField) {
+      super(aGetter, aField);
     }
 
     @Override
@@ -150,7 +160,28 @@ public abstract class FieldBinding<R, T, C extends Component> {
     }
 
     @Override
-    protected void prepareEditor(final String editorValue) {
+    protected void loadStringValue(final String editorValue) {
+      getEditor().setText(editorValue);
+    }
+  }
+
+  /**
+   * A Binding to edit a String value, which uses a subclass of JTextComponent (Usually a JTextField or JTextArea)
+   * to display the editable value.
+   * @param <D> The DataModel type.
+   */
+  public static class StringEditableBinding<D> extends EditableFieldBinding<D, String, JTextComponent> {
+    StringEditableBinding(Function<D, String> aGetter, BiConsumer<D, String> aSetter, JTextComponent aField) {
+      super(aGetter, aSetter, aField);
+    }
+
+    @Override
+    protected String getFieldValue() {
+      return getEditor().getText();
+    }
+
+    @Override
+    protected void loadStringValue(final String editorValue) {
       final JTextComponent editor = getEditor();
       editor.setText(clean(editorValue));
       
@@ -170,37 +201,32 @@ public abstract class FieldBinding<R, T, C extends Component> {
    * @param <D> The DataModel type
    */
   public static class IntegerBinding<D> extends FieldBinding<D, Integer, JLabel> {
-    private Integer loadedValue = 0;
-    @SuppressWarnings("JavaDoc")
-    IntegerBinding(final Function<D, Integer> aGetter, final BiConsumer<D, Integer> aSetter, final JLabel aField) {
-      super(aGetter, aSetter, aField, false);
+    IntegerBinding(final Function<D, Integer> aGetter, final JLabel aField) {
+      super(aGetter, aField);
+      aField.setText("0"); // Default text to zero.
     }
 
     @Override
-    protected void prepareEditor(final String editorValue) {
+    protected void loadStringValue(final String editorValue) {
       getEditor().setText(editorValue);
     }
 
     @Override
     protected Integer getFieldValue() {
-//      return Integer.valueOf(getEditor().getText());
-      return loadedValue;
+      return Integer.valueOf(getEditor().getText());
     }
 
-    @Override
-    public void prepareEditor(final D dataRecord) {
-      loadedValue = getTheValue(dataRecord);
-      prepareEditor(getStringValue(loadedValue));
-    }
   }
   
-  @SuppressWarnings("JavaDoc")
   public static <R> StringEditableBinding<R> bindEditableString(Function<R, String> getter, BiConsumer<R, String> setter, JTextComponent field) {
     return new StringEditableBinding<>(getter, setter, field);
   }
+  
+  public static <R> StringBinding<R> bindConstantString(Function<R, String> getter, JLabel label) {
+    return new StringBinding<>(getter, label);
+  }
 
-  @SuppressWarnings("JavaDoc")
-  public static <R> IntegerBinding<R> bindInteger(Function<R, Integer> getter, BiConsumer<R, Integer> setter, JLabel field) {
-    return new IntegerBinding<>(getter, setter, field);
+  public static <R> IntegerBinding<R> bindInteger(Function<R, Integer> getter, JLabel field) {
+    return new IntegerBinding<>(getter, field);
   }
 }

@@ -1,6 +1,7 @@
 package com.neptunedreams.framework.ui;
 
 import java.awt.BorderLayout;
+import java.awt.FlowLayout;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -17,9 +18,6 @@ public enum SwingUtils {
   ;
 
   public static JPanel wrapEast(JComponent component) {
-//    JPanel wrapper = new JPanel(new BorderLayout());
-//    wrapper.add(component, BorderLayout.LINE_START);
-//    return wrapper;
     return wrap(component, BorderLayout.LINE_END);
   }
   
@@ -34,11 +32,17 @@ public enum SwingUtils {
   public static JPanel wrapSouth(JComponent component) {
     return wrap(component, BorderLayout.PAGE_END);
   }
-
+  
   private static JPanel wrap(JComponent component, String direction) {
     JPanel wrapper = new JPanel(new BorderLayout());
     wrapper.add(component, direction);
     return wrapper;
+  }
+
+  public static JPanel wrapCenter(JComponent component) {
+    JPanel flowPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+    flowPanel.add(component);
+    return flowPanel;
   }
 
   public static JComponent scrollArea(JTextArea wrappedField) {

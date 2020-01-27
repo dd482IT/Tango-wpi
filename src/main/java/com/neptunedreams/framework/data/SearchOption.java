@@ -22,7 +22,7 @@ public enum SearchOption implements DisplayEnum {
   /**
    * find whole string as a single word.
    */
-  findWhole("Find Whole");
+  findWhole("Find Exact");
   private final String display;
 
   SearchOption(String display) {
