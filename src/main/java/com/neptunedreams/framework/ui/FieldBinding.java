@@ -19,11 +19,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  */
 @SuppressWarnings("unused")
 public abstract class FieldBinding<R, T, C extends Component> {
-  private Function<R, T> getter;
+  private Function<? super R, ? extends T> getter;
   private C editor;
   private final boolean isEditable;
 
-  protected FieldBinding(Function<R, T> aGetter, C aField) {
+  protected FieldBinding(Function<? super R, ? extends T> aGetter, C aField) {
     getter = aGetter;
     editor = aField;
     isEditable = false;
@@ -112,11 +112,21 @@ public abstract class FieldBinding<R, T, C extends Component> {
   public boolean isEditable() {
     return isEditable;
   }
+
+  /**
+   * This method is so you never have to cast a FieldBinding to an EditableFieldBinding, which raises all sorts
+   * of inspection warnings for raw types and unsafe casting. The default implementation throws an
+   * IllegalStateException, but EditableFieldBindings return this.
+   * @return this, if editable. Throws IllegalStateException if not.
+   */
+  public EditableFieldBinding<R, T, C> getEditableBinding() {
+    throw new IllegalStateException("Not implemented for non-editable binding");
+  }
   
   public abstract static class EditableFieldBinding<R, T, C extends Component> extends FieldBinding<R, T, C> {
-    private BiConsumer<R, T> setter;
+    private BiConsumer<? super R, ? super T> setter;
 
-    protected EditableFieldBinding(Function<R, T> aGetter, BiConsumer<R, T> aSetter, C aField) {
+    protected EditableFieldBinding(Function<? super R, ? extends T> aGetter, BiConsumer<? super R, ? super T> aSetter, C aField) {
       super(aGetter, aField);
       setter = aSetter;
     }
@@ -146,11 +156,16 @@ public abstract class FieldBinding<R, T, C extends Component> {
       assert value != null : "Null value";
       setter.accept(record, clean(value));
     }
+
+    @Override
+    public final EditableFieldBinding<R, T, C> getEditableBinding() {
+      return this;
+    }
   }
   
   public static class StringBinding<D> extends FieldBinding<D, String, JLabel> {
 
-    StringBinding(final Function<D, String> aGetter, final JLabel aField) {
+    StringBinding(final Function<? super D, String> aGetter, final JLabel aField) {
       super(aGetter, aField);
     }
 
@@ -171,7 +186,7 @@ public abstract class FieldBinding<R, T, C extends Component> {
    * @param <D> The DataModel type.
    */
   public static class StringEditableBinding<D> extends EditableFieldBinding<D, String, JTextComponent> {
-    StringEditableBinding(Function<D, String> aGetter, BiConsumer<D, String> aSetter, JTextComponent aField) {
+    StringEditableBinding(Function<? super D, String> aGetter, BiConsumer<? super D, ? super String> aSetter, JTextComponent aField) {
       super(aGetter, aSetter, aField);
     }
 
@@ -201,7 +216,7 @@ public abstract class FieldBinding<R, T, C extends Component> {
    * @param <D> The DataModel type
    */
   public static class IntegerBinding<D> extends FieldBinding<D, Integer, JLabel> {
-    IntegerBinding(final Function<D, Integer> aGetter, final JLabel aField) {
+    IntegerBinding(final Function<? super D, Integer> aGetter, final JLabel aField) {
       super(aGetter, aField);
       aField.setText("0"); // Default text to zero.
     }
@@ -218,15 +233,15 @@ public abstract class FieldBinding<R, T, C extends Component> {
 
   }
   
-  public static <R> StringEditableBinding<R> bindEditableString(Function<R, String> getter, BiConsumer<R, String> setter, JTextComponent field) {
+  public static <R> StringEditableBinding<R> bindEditableString(Function<? super R, String> getter, BiConsumer<? super R, ? super String> setter, JTextComponent field) {
     return new StringEditableBinding<>(getter, setter, field);
   }
   
-  public static <R> StringBinding<R> bindConstantString(Function<R, String> getter, JLabel label) {
+  public static <R> StringBinding<R> bindConstantString(Function<? super R, String> getter, JLabel label) {
     return new StringBinding<>(getter, label);
   }
 
-  public static <R> IntegerBinding<R> bindInteger(Function<R, Integer> getter, JLabel field) {
+  public static <R> IntegerBinding<R> bindInteger(Function<? super R, Integer> getter, JLabel field) {
     return new IntegerBinding<>(getter, field);
   }
 }
