@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -23,9 +24,11 @@ public class RecordModel<R> implements Serializable {
   private List<@NonNull R> foundItems = new ArrayList<>();
   private int recordIndex = 0;
   private final Supplier<@NonNull R> constructor;
+  private @NonNull Function<R, Integer> getIdFunction;
 
-  public RecordModel(Supplier<@NonNull R> theConstructor) {
+  public RecordModel(Supplier<@NonNull R> theConstructor, @NonNull Function<R, Integer> getIdFunction) {
     constructor = theConstructor;
+    this.getIdFunction = getIdFunction; 
   }
 
   public int getRecordIndex() {
@@ -43,13 +46,18 @@ public class RecordModel<R> implements Serializable {
   }
 
   public void setNewList(Collection<? extends R> records) {
+    int priorSelectionId = (foundItems.size() > recordIndex) ? getIdFunction.apply(foundItems.get(recordIndex)) : 0;
     foundItems = new ArrayList<>(records);
+    setRecordIndex(0);
     if (foundItems.isEmpty()) {
       final R record;
       record = createNewEmptyRecord();
       foundItems.add(record);
+    } else {
+      if (priorSelectionId != 0) {
+        setRecord(priorSelectionId); // sets recordIndex to same record, or 0 if not found
+      }
     }
-    setRecordIndex(0);
     fireModelListChanged();
   }
 
@@ -121,7 +129,23 @@ public class RecordModel<R> implements Serializable {
     fireModelListChanged(); // Is it dangerous to fire the listener before returning the record?
     return emptyRecord;
   }
-  
+
+  /**
+   * Sets the record index to point to the provided record, if it's in the found set. This is to preserve the current
+   * record if it's in the found set. If it's not, leaves the record index unchanged.
+   * @param recordId The ID of the record to set
+   */
+  private void setRecord(int recordId) {
+    int index = 0;
+    for (R r : foundItems) {
+      if (recordId == getIdFunction.apply(r)) {
+        setRecordIndex(index);
+        return;
+      }
+      index++;
+    }
+  }
+
   public @NonNull R getRecordAt(int index) {
     return foundItems.get(index);
   }
