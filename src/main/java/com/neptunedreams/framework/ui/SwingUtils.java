@@ -67,4 +67,25 @@ public enum SwingUtils {
     component.setBorder(null);
   }
 
+  /**
+   * Create a decorated JTextArea that cleans the clipboard before pasting data. "Cleaning the clipboard" means 
+   * stripping out the extra blank lines inserted automatically when pasting html data into a plain-text object.
+   * This works by calling ClipFix.htmlToText() before pasting any data. If the clipboard doesn't have html data,
+   * this has no effect.
+   * @param rows The number of rows
+   * @param columns The number of columns
+   * @return a decorated JTExtArea
+   * @see ClipFix#htmlToText() 
+   */
+  public static JTextArea createClipboardCleaningTextArea(int rows, int columns) {
+    return new JTextArea(rows, columns) {
+      @Override
+      public void paste() {
+        // Fix html clipboard data
+        ClipFix.htmlToText();
+        super.paste();
+      }
+    };
+  }
+
 }
