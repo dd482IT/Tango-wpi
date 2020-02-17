@@ -12,6 +12,7 @@ import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.parser.ParserDelegator;
+import com.neptunedreams.util.StringStuff;
 
 /**
  * <p>Created by IntelliJ IDEA.
@@ -69,7 +70,7 @@ public enum ClipFix {
       delegator.parse(new StringReader(text), callback, true);
     } catch (IOException e) {
       // Not likely, since we're using a StringReader.
-      throw new AssertionError(e.getLocalizedMessage(), e);
+      throw new AssertionError(StringStuff.emptyIfNull(e.getLocalizedMessage()), e);
     }
     if (trueHtml.toString().equals(FALSE)) {
       return null;

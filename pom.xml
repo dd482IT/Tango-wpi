@@ -115,7 +115,7 @@
 						<!-- <arg>-J- -add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg> -->
 
 						<!-- Optionally, -Awarns turns type-checking errors into warnings. -->
-						<arg>-Awarns</arg>
+<!--						<arg>-Awarns</arg>-->
 
 						<!--<arg>-Astubs=checkerframework/stubs</arg> &lt;!&ndash; Suggested by https://github.com/typetools/checker-framework/issues/445 &ndash;&gt;-->
 						<!--<arg>-AstubWarnIfNotFound</arg>-->

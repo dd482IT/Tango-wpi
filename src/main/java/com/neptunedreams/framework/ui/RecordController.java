@@ -68,9 +68,7 @@ public class RecordController<R, PK, F extends DBField> implements RecordModelLi
   private void loadNewRecord(@NonNull R record) {
     R currentRecord = recordSelectionModel.getCurrentRecord(); // Move this back to where the comment is
     
-    assert currentRecord != null;
-
-    if (recordSelectionModel.recordHasChanged()) {
+    if (recordSelectionModel.isRecordDataModified()) {
       try {
         MasterEventBus.postLoadUserData();
         dao.insertOrUpdate(currentRecord);
@@ -89,7 +87,9 @@ public class RecordController<R, PK, F extends DBField> implements RecordModelLi
     final PK lastRecordKey = dao.getPrimaryKey(lastRecord);
     
     // If we are already showing an unchanged blank record...
-    if ((model.getRecordIndex() == lastIndex) && ((lastRecordKey == null) || (lastRecordKey.equals(ZERO))) && !recordSelectionModel.recordHasChanged()) {
+    if ((model.getRecordIndex() == lastIndex) 
+        && ((lastRecordKey == null) || (lastRecordKey.equals(ZERO))) 
+        && !recordSelectionModel.isRecordDataModified()) {
       // ... we don't bother to create a new one.
       loadNewRecord(lastRecord);
     } else {
@@ -103,8 +103,9 @@ public class RecordController<R, PK, F extends DBField> implements RecordModelLi
     model.setNewList(theFoundItems);
     if (model.getSize() > 0) {
       final R selectedRecord = model.getFoundRecord();
-      assert selectedRecord != null;
-      loadNewRecord(selectedRecord);
+      if (!selectedRecord.equals(recordSelectionModel.getCurrentRecord())) {
+        loadNewRecord(selectedRecord);
+      }
     }
   }
 
@@ -120,6 +121,10 @@ public class RecordController<R, PK, F extends DBField> implements RecordModelLi
   }
 
   Collection<@NonNull R> findRecordsInField(final String text, final F field, SearchOption searchOption) throws SQLException {
+    // If the user has changed the current record, we need to save those changes before searching, because The find
+    // will retrieve values from the database, not from what's on-screen.
+    loadNewRecord(model.getFoundRecord());
+
     if (text.trim().isEmpty()) {
       return dao.getAll(getOrder());
     } else {
@@ -165,6 +170,10 @@ public class RecordController<R, PK, F extends DBField> implements RecordModelLi
   }
   
   Collection<@NonNull R> findRecordsAnywhere(final String text, SearchOption searchOption) throws SQLException {
+    // If the user has changed the current record, we need to save those changes before searching, because The find
+    // will retrieve values from the database, not from what's on-screen.
+    loadNewRecord(model.getFoundRecord());
+
     if (text.isEmpty()) {
       return dao.getAll(getOrder());
     } else {

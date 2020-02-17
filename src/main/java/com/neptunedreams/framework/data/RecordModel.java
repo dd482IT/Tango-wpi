@@ -48,14 +48,17 @@ public class RecordModel<R> implements Serializable {
   public void setNewList(Collection<? extends R> records) {
     int priorSelectionId = (foundItems.size() > recordIndex) ? getIdFunction.apply(foundItems.get(recordIndex)) : 0;
     foundItems = new ArrayList<>(records);
-    setRecordIndex(0);
+    // Not sure if the "if" is needed, or if we can just always set the record index to zero.
+    if (recordIndex >= foundItems.size()) {
+      setRecordIndex(0);
+    }
     if (foundItems.isEmpty()) {
       final R record;
       record = createNewEmptyRecord();
       foundItems.add(record);
     } else {
       if (priorSelectionId != 0) {
-        setRecord(priorSelectionId); // sets recordIndex to same record, or 0 if not found
+        setRecordById(priorSelectionId); // sets recordIndex to same record, or 0 if not found
       }
     }
     fireModelListChanged();
@@ -135,7 +138,7 @@ public class RecordModel<R> implements Serializable {
    * record if it's in the found set. If it's not, leaves the record index unchanged.
    * @param recordId The ID of the record to set
    */
-  private void setRecord(int recordId) {
+  private void setRecordById(int recordId) {
     int index = 0;
     for (R r : foundItems) {
       if (recordId == getIdFunction.apply(r)) {

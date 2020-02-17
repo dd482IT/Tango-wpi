@@ -9,6 +9,6 @@ package com.neptunedreams.framework.data;
  */
 public interface RecordSelectionModel<R> {
   
-  boolean recordHasChanged();
+  boolean isRecordDataModified();
   R getCurrentRecord();
 }
