@@ -7,12 +7,12 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.IOException;
 import java.io.StringReader;
-import javax.annotation.Nullable;
 import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.parser.ParserDelegator;
 import com.neptunedreams.util.StringStuff;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * <p>Created by IntelliJ IDEA.
@@ -40,8 +40,7 @@ public enum ClipFix {
    * @param text The html text to convert to raw text
    * @return the raw text, or null if it doesn't contain a paragraph tag
    */
-  @Nullable
-  private static String parseHtml(String text) {
+  private static @Nullable String parseHtml(String text) {
     ParserDelegator delegator = new ParserDelegator();
     final StringBuilder rawText = new StringBuilder();
     // kludge (minor). This can't be a boolean because I need to make it final and change it later.
@@ -90,17 +89,24 @@ public enum ClipFix {
    * @see SwingUtils#createClipboardCleaningTextArea(int, int) 
    */
   public static void htmlToText() {
+    String htmlText = getHtmlAsText();
+    if (htmlText != null) {
+      StringSelection selection = new StringSelection(htmlText);
+      Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+      clipboard.setContents(selection, selection);
+    }
+  }
+  
+  @Nullable
+  public static String getHtmlAsText() {
     Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
     DataFlavor htmlFlavor = DataFlavor.selectionHtmlFlavor;
     if (clipboard.isDataFlavorAvailable(htmlFlavor)) {
       try {
         String data = clipboard.getData(htmlFlavor).toString();
-        String revisedData = parseHtml(data);
-        if (revisedData != null) {
-          StringSelection selection = new StringSelection(revisedData);
-          clipboard.setContents(selection, selection);
-        }
+        return parseHtml(data);
       } catch (UnsupportedFlavorException | IOException ignored) { }
     }
+    return null;
   }
 }
