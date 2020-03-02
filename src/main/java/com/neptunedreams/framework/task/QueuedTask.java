@@ -3,6 +3,8 @@ package com.neptunedreams.framework.task;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.function.Consumer;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * This class lets the application search as the user types, but delays the launch of the search until after the user 
@@ -34,15 +36,14 @@ import java.util.function.Consumer;
  * @param <I> Input type
  * @param <R> Result type
  */
-public final class QueuedTask<I, R> {
+@SuppressWarnings("TypeParameterExplicitlyExtendsObject")
+public final class QueuedTask<I extends @NonNull Object, R> {
   private final ParameterizedCallable<I, R> callable;
   private final long delayMilliSeconds;
   private final Consumer<R> consumer;
-  @SuppressWarnings("type.argument.type.incompatible") // The warning makes no sense at all:
-  // found   : I[ extends @Initialized @Nullable Object super @Initialized @NonNull Void]
-  //[ERROR] required: @Initialized @NonNull Object
   private final BlockingQueue<I> queue = new SynchronousQueue<>();
 
+  @SuppressWarnings("BoundedWildcard") // The "bounds" expected by this inspection both ? extends R and ? super R
   public QueuedTask(long delay, ParameterizedCallable<I, R> task, Consumer<R> theConsumer) {
     delayMilliSeconds = delay;
     callable = task;
@@ -108,6 +109,7 @@ public final class QueuedTask<I, R> {
     while (true) {
       // This try block gets interrupted whenever feedData() is called.
       try {
+        //noinspection BusyWait
         Thread.sleep(delayMilliSeconds);
         launchCallable();
       } catch (InterruptedException ignored) { }
@@ -118,7 +120,7 @@ public final class QueuedTask<I, R> {
    * Skip the queuing and waiting and just launch the task immediately.
    */
   private void launchCallable() {
-    final I inputData = callable.getInputData();
+    final @Nullable I inputData = callable.getInputData();
     if (inputData != null) {
       callable.setInputData(null);
       R result = callable.call(inputData);

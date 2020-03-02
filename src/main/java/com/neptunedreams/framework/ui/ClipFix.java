@@ -96,9 +96,8 @@ public enum ClipFix {
       clipboard.setContents(selection, selection);
     }
   }
-  
-  @Nullable
-  public static String getHtmlAsText() {
+
+  public static @Nullable String getHtmlAsText() {
     Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
     DataFlavor htmlFlavor = DataFlavor.selectionHtmlFlavor;
     if (clipboard.isDataFlavorAvailable(htmlFlavor)) {
