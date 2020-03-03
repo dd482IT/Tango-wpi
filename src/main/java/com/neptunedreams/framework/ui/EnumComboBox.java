@@ -16,33 +16,36 @@ import javax.swing.ListCellRenderer;
  */
 public class EnumComboBox<E extends Enum<E> & DisplayEnum> extends JComboBox<E> {
 
-  @SuppressWarnings({"method.invocation.invalid", "argument.type.incompatible"})
-  public EnumComboBox(E[] values) {
-    super();
-    @SuppressWarnings("unchecked")
-    DefaultComboBoxModel<E> model = new DefaultComboBoxModel<>();
-    setModel(model);
-    for (E value: values) {
+  public static <N extends Enum<N> & DisplayEnum> EnumComboBox<N> createComboBox(N[] values) {
+    EnumComboBox<N> comboBox = new EnumComboBox<>();
+    DefaultComboBoxModel<N> model = new DefaultComboBoxModel<>();
+    comboBox.setModel(model);
+    for (N value: values) {
       model.addElement(value);
     }
     model.setSelectedItem(values[0]);
-    setMaximumRowCount(values.length);
-    setEditable(false);
-    ListCellRenderer r = new DefaultListCellRenderer() {
+    comboBox.setMaximumRowCount(values.length);
+    comboBox.setEditable(false);
+    ListCellRenderer<Object> r = new DefaultListCellRenderer() {
       @Override
       public Component getListCellRendererComponent(final JList<?> list, final Object value, final int index, final boolean isSelected, final boolean cellHasFocus) {
         @SuppressWarnings("unchecked")
-        E eValue = (E) value;
-        
+        N eValue = (N) value;
+
         return super.getListCellRendererComponent(list, eValue.getDisplay(), index, isSelected, cellHasFocus);
       }
     };
-    //noinspection unchecked
-    setRenderer(r);
+    comboBox.setRenderer(r);
+    return comboBox;
+  }
+
+  private EnumComboBox() {
+    super();
   }
   
-  @SuppressWarnings("return.type.incompatible")
   public E getSelected() {
+    // Maybe I can get rid of this unchecked warning by extending ComboBoxModel to add two typed methods to match the
+    // two current untyped methods. Then I could use the typed methods here.
     @SuppressWarnings("unchecked")
     final E selectedItem = (E) getModel().getSelectedItem();
     return selectedItem;

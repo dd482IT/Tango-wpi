@@ -116,9 +116,9 @@
 
 						<!-- Optionally, -Awarns turns type-checking errors into warnings. -->
 <!--						<arg>-Awarns</arg>-->
-
+						<arg>-Astubs=nullness-stub/</arg>
 						<!--<arg>-Astubs=checkerframework/stubs</arg> &lt;!&ndash; Suggested by https://github.com/typetools/checker-framework/issues/445 &ndash;&gt;-->
-						<!--<arg>-AstubWarnIfNotFound</arg>-->
+						<arg>-AstubWarnIfNotFound</arg>
 					</compilerArgs>
 				</configuration>
 				<version>3.8.1</version>

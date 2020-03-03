@@ -131,7 +131,6 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
   }
 
   private void animate() {
-    @SuppressWarnings("argument.type.incompatible")    // Stub this out!
     Timer timer = new Timer(frameMillis, null);
     final ActionListener actionListener = (evt) -> {
       frame++;

@@ -12,7 +12,6 @@ import javax.swing.JOptionPane;
 public enum ErrorReport {
   ;
 
-  @SuppressWarnings("argument.type.incompatible") // null parentComponent is actually allowed.
   public static void reportException(String operation, Throwable t) {
     //noinspection HardCodedStringLiteral
     String message = String.format("Error during %s:%n%s", operation, t.getMessage());
