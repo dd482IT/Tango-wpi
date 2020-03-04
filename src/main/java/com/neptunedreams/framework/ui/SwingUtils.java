@@ -2,10 +2,14 @@ package com.neptunedreams.framework.ui;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.beans.PropertyChangeListener;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.text.Caret;
+import javax.swing.text.DefaultCaret;
+import javax.swing.text.JTextComponent;
 
 /**
  * <p>Created by IntelliJ IDEA.
@@ -62,7 +66,6 @@ public enum SwingUtils {
    *
    * @param component The component
    */
-  @SuppressWarnings("argument.type.incompatible")
   public static void setNoBorder(JComponent component) {
     component.setBorder(null);
   }
@@ -88,4 +91,30 @@ public enum SwingUtils {
     };
   }
 
+  /**
+   * On the Mac, the AquaCaret will get installed. This caret has an annoying feature of selecting all the text on a
+   * focus-gained event. If this isn't bad enough, it also fails to check temporary vs permanent focus gain, so it
+   * gets triggered on a focused JTextComponent whenever a menu is released! This method removes the Aqua Caret and
+   * installs a standard caret. It's only needed on the Mac, but it's safe to use on any platform.
+   *
+   * @param components The components to repair. This is usually a JTextField or JTextArea.
+   */
+  public static void installStandardCaret(JTextComponent... components) {
+    for (JTextComponent component : components) {
+      DefaultCaret caret = new DefaultCaret();
+      replaceCaret(component, caret);
+    }
+  }
+
+  public static void replaceCaret(final JTextComponent component, final Caret caret) {
+    final Caret priorCaret = component.getCaret();
+    int blinkRate = priorCaret.getBlinkRate();
+    if (priorCaret instanceof PropertyChangeListener) {
+      // com.apple.laf.AquaCaret, the troublemaker, installs this listener which doesn't get removed when the Caret 
+      // gets uninstalled.
+      component.removePropertyChangeListener((PropertyChangeListener) priorCaret);
+    }
+    component.setCaret(caret);
+    caret.setBlinkRate(blinkRate); // Starts the new caret blinking.
+  }
 }

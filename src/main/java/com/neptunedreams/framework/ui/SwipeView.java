@@ -28,7 +28,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * @author Miguel Mu\u00f1oz
  */
 public final class SwipeView<C extends JComponent> extends LayerUI<C> {
-  @SuppressWarnings({"WeakerAccess"})
+  @SuppressWarnings("WeakerAccess")
   public static <J extends JComponent> SwipeView<J> wrap(J recordView) {
     JLayer<J> jLayer = new JLayer<>(recordView);
     final SwipeView<J> ui = new SwipeView<>(recordView, jLayer);
@@ -169,7 +169,6 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
   private class MouseTracker extends MouseAdapter {
     private boolean active = false;
     private boolean tracking = false;
-    @SuppressWarnings("argument.type.incompatible") // Stub this out!
     private final Timer timer = new Timer(frameMillis, null);
 
     MouseTracker(Runnable operation, SwipeDirection swipeDirection) {

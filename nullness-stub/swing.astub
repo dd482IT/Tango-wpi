@@ -1,13 +1,18 @@
 import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.swing.border.Border;
 
 package javax.swing;
 
-    public class Timer {
-        public Timer(int delay, @Nullable ActionListener listener);
-    }
-    
-    public class JOptionPane {
-        public static void showMessageDialog(@Nullable Component parentComponent,
-                Object message, String title, int messageType)
-                throws HeadlessException;
-    }
+public class Timer {
+  public Timer(int delay, @Nullable ActionListener listener);
+}
+
+public class JOptionPane {
+  public static void showMessageDialog(@Nullable Component parentComponent,
+          Object message, String title, int messageType)
+          throws HeadlessException;
+}
+
+public class JComponent extends Component {
+  public void setBorder(@Nullable Border border);
+}
