@@ -3,6 +3,7 @@ package com.neptunedreams.framework.ui;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.beans.PropertyChangeListener;
+import java.util.function.Supplier;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -21,22 +22,45 @@ import javax.swing.text.JTextComponent;
 public enum SwingUtils {
   ;
 
+  /**
+   * Wrap the specified component into the east side (Actually, the line-end side) of a new JPanel.
+   * @param component The component to wrap
+   * @return The containing JPanel
+   */
   public static JPanel wrapEast(JComponent component) {
     return wrap(component, BorderLayout.LINE_END);
   }
-  
+
+  /**
+   * Wrap the specified component into the wast side (Actually, the line-start side) of a new JPanel.
+   *
+   * @param component The component to wrap
+   * @return The containing JPanel
+   */
   public static JPanel wrapWest(JComponent component) {
     return wrap(component, BorderLayout.LINE_START);
   }
 
+  /**
+   * Wrap the specified component into the north side (Actually, the page-start side) of a new JPanel.
+   *
+   * @param component The component to wrap
+   * @return The containing JPanel
+   */
   public static JPanel wrapNorth(JComponent component) {
     return wrap(component, BorderLayout.PAGE_START);
   }
 
+  /**
+   * Wrap the specified component into the south side (Actually, the page-end side) of a new JPanel.
+   *
+   * @param component The component to wrap
+   * @return The containing JPanel
+   */
   public static JPanel wrapSouth(JComponent component) {
     return wrap(component, BorderLayout.PAGE_END);
   }
-  
+
   private static JPanel wrap(JComponent component, String direction) {
     JPanel wrapper = new JPanel(new BorderLayout());
     wrapper.add(component, direction);
@@ -49,12 +73,27 @@ public enum SwingUtils {
     return flowPanel;
   }
 
+  /**
+   * Configure a JTextArea for prose text and wrap it inside a JScrollPane that is set up for vertical scrolling and
+   * horizontal text wrapping the the component's width. This also sets the wordWrapStyle and lineWrap properties.
+   * @param wrappedField The JTextArea to configure and wrap
+   * @return a JScrollPane wrapping the now configured text area.
+   */
   public static JComponent scrollArea(JTextArea wrappedField) {
     wrappedField.setWrapStyleWord(true);
     wrappedField.setLineWrap(true);
     return verticalScroll(wrappedField);
   }
 
+  /**
+   * Wrap the specified component inside a JScrollPane, configuring it to have a vertical scrollbar but no horizontal 
+   * scrollbar. This is the best configuration for multi-line text components like JTextArea, which are designed to 
+   * wrap text to the current size under these conditions. To configure a JTextArea properly, you should really call 
+   * scrollArea instead, which calls this one, but makes more useful changes.
+   * @param wrapped The component to wrap.
+   * @return the JScrollPane that wraps the component.
+   * @see #scrollArea(JTextArea) 
+   */
   public static JComponent verticalScroll(JComponent wrapped) {
     return new JScrollPane(wrapped, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
   }
@@ -62,7 +101,7 @@ public enum SwingUtils {
   /**
    * Removes the border on the specified component by calling {@code setBorder(null)}.
    * The JComponent.setBorder method is improperly annotated. It puts @NonNull on the parameter, which is wrong. This
-   * method works around that problem. It has to be its own method because you can't annoate a x.setBorder() call.
+   * method works around that problem. It has to be its own method because you can't annotate a x.setBorder() call.
    *
    * @param component The component
    */
@@ -100,12 +139,26 @@ public enum SwingUtils {
    * @param components The components to repair. This is usually a JTextField or JTextArea.
    */
   public static void installStandardCaret(JTextComponent... components) {
+    installCustomCaret(DefaultCaret::new, components);
+  }
+
+  /**
+   * Install a custom Caret, provided by the supplier or constructor, into the specified JTextComponents. 
+   * @param supplier the Constructor to instantiate each Caret
+   * @param components The components to get the new Caret.
+   */
+  public static void installCustomCaret(Supplier<? extends Caret> supplier, JTextComponent... components) {
     for (JTextComponent component : components) {
-      DefaultCaret caret = new DefaultCaret();
+      Caret caret = supplier.get();
       replaceCaret(component, caret);
     }
   }
 
+  /**
+   * Installs the specified Caret into the JTextComponent, using the same blink-rate as the previous caret.
+   * @param component The text component to get the new Caret
+   * @param caret The new Caret to install
+   */
   public static void replaceCaret(final JTextComponent component, final Caret caret) {
     final Caret priorCaret = component.getCaret();
     int blinkRate = priorCaret.getBlinkRate();

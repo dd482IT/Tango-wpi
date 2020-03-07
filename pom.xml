@@ -6,7 +6,7 @@
 
 	<groupId>com.neptunedreams</groupId>
 	<artifactId>tango</artifactId>
-	<version>1.0.2-SNAPSHOT</version>
+	<version>1.0.3-SNAPSHOT</version>
 	<name>Tango</name>
 	<packaging>jar</packaging>
 	
@@ -106,6 +106,7 @@
 						<!-- There are probably other checkers we should invoke. -->
 						<annotationProcessor>org.checkerframework.checker.nullness.NullnessChecker</annotationProcessor>
 					</annotationProcessors>
+					<showWarnings>true</showWarnings>
 					<compilerArgs>
 						<!-- If using JDK 8, use only the two arguments immediately below. -->
 						<arg>-J-Xbootclasspath/p:${errorProneJavac}</arg>
