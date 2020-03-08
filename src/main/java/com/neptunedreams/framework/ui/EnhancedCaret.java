@@ -28,6 +28,7 @@ public class EnhancedCaret extends DefaultCaret {
   private int highMark;
   private int lowMark;
   private boolean selectingByWord = false; // true when the last selection was done by word.
+  private boolean selectingByRow = false; // true when the last selection was done by paragraph. 
 
   public EnhancedCaret() {
     super();
@@ -43,43 +44,26 @@ public class EnhancedCaret extends DefaultCaret {
 
   @Override
   public void mousePressed(final MouseEvent e) {
-    if (selectingByWord && isExtendSelection(e)) {
-      // user is doing a shift-click. Construct a new MouseEvent that happened at one end of the word, and send that
-      // to super.mousePressed().
-      int newPos;
-      int pos = getPos(e);
-      try {
-        if (pos > highMark) {
-          newPos = Utilities.getWordEnd(getComponent(), pos);
-          setDot(lowMark);
-        } else if (pos < lowMark) {
-          newPos = Utilities.getWordStart(getComponent(), pos);
-          setDot(highMark);
-        } else {
-          if (getMark() == lowMark) {
-            newPos = Utilities.getWordEnd(getComponent(), pos);
-          } else {
-            newPos = Utilities.getWordStart(getComponent(), pos);
-          }
-          pos = -1; // ensure we make a new event
-        }
-      } catch (BadLocationException ex) {
-        throw new IllegalStateException(ex);
-      }
-      MouseEvent alternateEvent;
-      if (newPos == pos) {
-        alternateEvent = e;
-      } else {
-        alternateEvent = makeNewEvent(e, newPos);
-      }
+    // if user is doing a shift-click. Construct a new MouseEvent that happened at one end of the word, and send that
+    // to super.mousePressed().
+    boolean isExtended = isExtendSelection(e);
+    if (selectingByWord && isExtended) {
+      MouseEvent alternateEvent = getRevisedMouseEvent(e, Utilities::getWordStart, Utilities::getWordEnd);
+      super.mousePressed(alternateEvent);
+    } else if (selectingByRow && isExtended) {
+      MouseEvent alternateEvent = getRevisedMouseEvent(e, Utilities::getRowStart, Utilities::getRowEnd);
       super.mousePressed(alternateEvent);
     } else  {
-      selectingByWord = e.getClickCount() == 2;
+      if (!isExtended) {
+        int clickCount = e.getClickCount();
+        selectingByWord = clickCount == 2;
+        selectingByRow = clickCount == 3;
+      }
       super.mousePressed(e); // let the system select the clicked word
       // save the low end of the selected word.
       lowMark = getMark();
-      if (selectingByWord) {
-        // User did a double-click...
+      if (selectingByWord || selectingByRow) {
+        // User did a double- or triple-click...
         // They've selected the whole word. Record the high end.
         highMark = getDot();
       } else {
@@ -88,7 +72,48 @@ public class EnhancedCaret extends DefaultCaret {
       }
     }
   }
-  
+
+  @Override
+  public void mouseClicked(final MouseEvent e) {
+    super.mouseClicked(e);
+    if (selectingByRow) {
+      int mark = getMark();
+      int dot = getDot();
+      lowMark = Math.min(mark, dot);
+      highMark = Math.max(mark, dot);
+    }
+  }
+
+  private MouseEvent getRevisedMouseEvent(final MouseEvent e, final BiTextFunction getStart, final BiTextFunction getEnd) {
+    int newPos;
+    int pos = getPos(e);
+    try {
+      if (pos > highMark) {
+        newPos = getEnd.loc(getComponent(), pos);
+        setDot(lowMark);
+      } else if (pos < lowMark) {
+        newPos = getStart.loc(getComponent(), pos);
+        setDot(highMark);
+      } else {
+        if (getMark() == lowMark) {
+          newPos = getEnd.loc(getComponent(), pos);
+        } else {
+          newPos = getStart.loc(getComponent(), pos);
+        }
+        pos = -1; // ensure we make a new event
+      }
+    } catch (BadLocationException ex) {
+      throw new IllegalStateException(ex);
+    }
+    MouseEvent alternateEvent;
+    if (newPos == pos) {
+      alternateEvent = e;
+    } else {
+      alternateEvent = makeNewEvent(e, newPos);
+    }
+    return alternateEvent;
+  }
+
   private boolean isExtendSelection(MouseEvent e) {
     // We extend the selection when the shift is down but control is not. Other modifiers don't matter.
     int modifiers = e.getModifiersEx();
@@ -103,9 +128,19 @@ public class EnhancedCaret extends DefaultCaret {
 
   @Override
   public void mouseDragged(final MouseEvent e) {
-    if (!selectingByWord) {
+    if (!selectingByWord && !selectingByRow) {
       super.mouseDragged(e);
     } else {
+      BiTextFunction getStart;
+      BiTextFunction getEnd;
+      if (selectingByWord) {
+        getStart = Utilities::getWordStart;
+        getEnd = Utilities::getWordEnd;
+      } else {
+        // selecting by paragraph
+        getStart = Utilities::getRowStart;
+        getEnd = Utilities::getRowEnd;
+      }
       // super.mouseDragged just calls moveDot() after getting the position. We can do the same thing...
       // There's no "setMark()" method. You can set the mark by calling setDot(). It sets both the mark and the dot to
       // the same place. Then you can call moveDot() to put the dot somewhere else.
@@ -114,11 +149,11 @@ public class EnhancedCaret extends DefaultCaret {
         JTextComponent component = getComponent();
         try {
           if (pos > highMark) {
-            int wordEnd = Utilities.getWordEnd(component, pos);
+            int wordEnd = getEnd.loc(component, pos);
             setDot(lowMark);
             moveDot(wordEnd);
           } else if (pos < lowMark) {
-            int wordStart = Utilities.getWordStart(component, pos);
+            int wordStart = getStart.loc(component, pos);
             setDot(wordStart); // Sets the mark, too
             moveDot(highMark);
           } else {
@@ -160,9 +195,24 @@ public class EnhancedCaret extends DefaultCaret {
     }
   }
 
+  // For eventual use by a "select paragraph" feature:
+//  private static final char NEW_LINE = '\n';
+//  private static int getParagraphStart(JTextComponent component, int position) {
+//    return component.getText().substring(0, position).lastIndexOf(NEW_LINE);
+//  }
+//  
+//  private static int getParagraphEnd(JTextComponent component, int position) {
+//    return component.getText().indexOf(NEW_LINE, position);
+//  }
+
   @SuppressWarnings({"CloneReturnsClassType", "UseOfClone"})
   @Override
   public Object clone() {
     return super.clone();
+  }
+  
+  @FunctionalInterface
+  private interface BiTextFunction {
+    int loc(JTextComponent component, int position) throws BadLocationException;
   }
 }
