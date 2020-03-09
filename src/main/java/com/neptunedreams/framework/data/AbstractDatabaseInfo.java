@@ -17,16 +17,23 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  *
  * @author Miguel Mu\u00f1oz
  */
+@SuppressWarnings("RedundantSuppression")
 public abstract class AbstractDatabaseInfo implements DatabaseInfo {
+  private static final String MEMORY = ":memory:";
   private @Nullable ConnectionSource connectionSource;
   private final String homeDirectory;
   
   @SuppressWarnings("JavaDoc")
   protected AbstractDatabaseInfo(String homeDir) { // throws IOException {
-    String userHome = System.getProperty("user.home");
-    //noinspection StringConcatenation,StringConcatenationMissingWhitespace
-    homeDirectory = userHome + homeDir;
-    ensureHomeExists(homeDirectory);
+    // todo: Memory is implemented here for SQLite. This shouldn't be in the abstract class. Move this to the subclass
+    if (MEMORY.equals(homeDir)) {
+      homeDirectory = homeDir;
+    } else {
+      String userHome = System.getProperty("user.home");
+      //noinspection StringConcatenation,StringConcatenationMissingWhitespace
+      homeDirectory = userHome + homeDir;
+      ensureHomeExists(homeDirectory);
+    }
   }
 
   @Override
@@ -53,7 +60,7 @@ public abstract class AbstractDatabaseInfo implements DatabaseInfo {
     return homeDirectory;
   }
 
-  @SuppressWarnings("JavaDoc")
+  @SuppressWarnings({"JavaDoc", "HardCodedStringLiteral"})
   @EnsuresNonNull("connectionSource")
   protected void initialize() throws SQLException {
     connectionSource = connect();
@@ -67,6 +74,9 @@ public abstract class AbstractDatabaseInfo implements DatabaseInfo {
 //    System.out.printf("databaseHome: %s%n", databaseHome);
     @SuppressWarnings("HardcodedFileSeparator")
     File dataDir = new File(databaseHome);
+    if (":memory".equals(databaseHome)) {
+      return;
+    }
 //    System.out.printf("DataDir: %s%n", dataDir.getAbsolutePath());
     if (!dataDir.exists()) {
       //noinspection BooleanVariableAlwaysNegated

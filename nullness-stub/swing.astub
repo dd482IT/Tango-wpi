@@ -1,5 +1,6 @@
 import org.checkerframework.checker.nullness.qual.Nullable;
 import javax.swing.border.Border;
+import java.awt.Component;
 
 package javax.swing;
 
