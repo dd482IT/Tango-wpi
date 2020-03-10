@@ -19,14 +19,21 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  */
 @SuppressWarnings("RedundantSuppression")
 public abstract class AbstractDatabaseInfo implements DatabaseInfo {
-  private static final String MEMORY = ":memory:";
   private @Nullable ConnectionSource connectionSource;
   private final String homeDirectory;
-  
+
+  /**
+   * Construct a new AbstractDatabaseInfo using the specified directory. The directory may be an empty string, but
+   * must not be null. If it is an empty String, this will assume the user is requesting an im-memory database. 
+   * otherwise, it will try to create the directory if it does not exist, and throw an IllegalStateException if it 
+   * can't.
+   * @param homeDir The path to the home directory, relative to the user's home directory, given by the "user.home"
+   *                System property.
+   */
   @SuppressWarnings("JavaDoc")
   protected AbstractDatabaseInfo(String homeDir) { // throws IOException {
-    // todo: Memory is implemented here for SQLite. This shouldn't be in the abstract class. Move this to the subclass
-    if (MEMORY.equals(homeDir)) {
+    // Specify an empty homeDir to use an imMemory database.
+    if (homeDir.isEmpty()) {
       homeDirectory = homeDir;
     } else {
       String userHome = System.getProperty("user.home");
@@ -46,13 +53,12 @@ public abstract class AbstractDatabaseInfo implements DatabaseInfo {
 
   private ConnectionSource connect() throws SQLException {
     String connectionUrl = getUrl();
-    //noinspection UseOfSystemOutOrSystemErr
-//    System.out.printf("URL: %s%n", connectionUrl);
+//    //noinspection UseOfSystemOutOrSystemErr,HardCodedStringLiteral
+//    System.out.printf("Connection URL: %s%n", connectionUrl);
+
     //noinspection CallToDriverManagerGetConnection,JDBCResourceOpenedButNotSafelyClosed
     Connection connection = DriverManager.getConnection(connectionUrl);
     return () -> connection;
-//    Connection wrapped = new ConnectionWrapper(connection);
-//      return () -> wrapped;
   }
 
   @Override
@@ -74,9 +80,6 @@ public abstract class AbstractDatabaseInfo implements DatabaseInfo {
 //    System.out.printf("databaseHome: %s%n", databaseHome);
     @SuppressWarnings("HardcodedFileSeparator")
     File dataDir = new File(databaseHome);
-    if (":memory".equals(databaseHome)) {
-      return;
-    }
 //    System.out.printf("DataDir: %s%n", dataDir.getAbsolutePath());
     if (!dataDir.exists()) {
       //noinspection BooleanVariableAlwaysNegated
