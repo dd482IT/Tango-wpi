@@ -1,6 +1,7 @@
 import org.checkerframework.checker.nullness.qual.Nullable;
 import javax.swing.border.Border;
 import java.awt.Component;
+import java.awt.Container;
 
 package javax.swing;
 
@@ -14,6 +15,6 @@ public class JOptionPane {
           throws HeadlessException;
 }
 
-public class JComponent extends Component {
+public class JComponent extends Container {
   public void setBorder(@Nullable Border border);
 }

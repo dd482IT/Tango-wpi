@@ -15,7 +15,6 @@ import java.util.List;
  *
  * @author Miguel Mu\u00f1oz
  */
-//@SuppressWarnings({"ConstantConditions", "ReturnOfNull", "ZeroLengthArrayAllocation", "MagicConstant", "MagicCharacter", "UseOfSystemOutOrSystemErr"})
 public enum DataUtil {
   ;
 
@@ -26,6 +25,11 @@ public enum DataUtil {
   }
   */
 
+  /**
+   * @param resultSet Print a well-formatted result set
+   * @throws SQLException most likely only when the ResultSet is invalid, possibly due to later changes in the table.
+   * (Just a guess)
+   */
   @SuppressWarnings({"UseOfSystemOutOrSystemErr", "MagicCharacter"})
   public static void printResultSet(final ResultSet resultSet) throws SQLException {
     ResultSetMetaData metaData = resultSet.getMetaData();

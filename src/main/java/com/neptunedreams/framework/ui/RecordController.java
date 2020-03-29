@@ -18,6 +18,7 @@ import org.checkerframework.checker.initialization.qual.NotOnlyInitialized;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
+ * Handles user input and output by sending commands to the data model.
  * <p>Created by IntelliJ IDEA.
  * <p>Date: 10/29/17
  * <p>Time: 11:27 AM
@@ -25,7 +26,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
  * @author Miguel Mu\u00f1oz
  */
 @SuppressWarnings({"WeakerAccess", "HardCodedStringLiteral"})
-public class RecordController<R, PK, F extends DBField> implements RecordModelListener {
+public final class RecordController<R, PK, F extends DBField> implements RecordModelListener {
   private static final Integer ZERO = 0;
   // For DerbyRecordDao, E was Record.FIELD
 //  private E order = Record.FIELD.SOURCE;
@@ -35,8 +36,8 @@ public class RecordController<R, PK, F extends DBField> implements RecordModelLi
   @NotOnlyInitialized
   private final RecordModel<R> model;
 
-  @SuppressWarnings("argument.type.incompatible")
-  public RecordController(
+//  @SuppressWarnings("argument.type.incompatible")
+  private RecordController(
       Dao<R, PK, F> theDao,
       RecordSelectionModel<? extends R> recordSelectionModel,
       F initialOrder,
@@ -46,9 +47,31 @@ public class RecordController<R, PK, F extends DBField> implements RecordModelLi
     dao = theDao;
     this.recordSelectionModel = recordSelectionModel;
     model = new RecordModel<>(recordConstructor, getIdFunction);
-    //noinspection ThisEscapedInObjectConstruction
-    model.addModelListener(this); // Type checker needs "this" to be initialized, so suppress the warning.
     order = initialOrder;
+  }
+
+  /**
+   * Construct a RecordController
+   * @param theDao The DAO
+   * @param recordSelectionModel The selection model from which the controller gets the selected record
+   * @param initialOrder The initial order of the records
+   * @param recordConstructor Constructs a new, blank record
+   * @param getIdFunction Function to  get the ID from the record
+   * @param <RR> The record type
+   * @param <PPK> The primary key type
+   * @param <FF> type of the initial and subsequent record orders
+   * @return A constructed and initialized RecordController
+   */
+  public static <RR, PPK, FF extends DBField> RecordController<RR, PPK, FF> createRecordController(
+      Dao<RR, PPK, FF> theDao,
+      RecordSelectionModel<? extends RR> recordSelectionModel,
+      FF initialOrder,
+      Supplier<@NonNull RR> recordConstructor,
+      Function<RR, Integer> getIdFunction
+  ) {
+    RecordController<RR, PPK, FF> recordController = new RecordController<>(theDao, recordSelectionModel, initialOrder, recordConstructor, getIdFunction);
+    recordController.model.addModelListener(recordController);
+    return recordController;
   }
 
   public RecordModel<R> getModel() {
@@ -57,6 +80,10 @@ public class RecordController<R, PK, F extends DBField> implements RecordModelLi
   
   public Dao<R, PK, F> getDao() { return dao; }
 
+  /**
+   * Specify the order, chosen by the user, of the returned records, 
+   * @param theOrder The field by which the results will be ordered
+   */
   public void specifyOrder(F theOrder) {
     order = theOrder;
   }
@@ -79,6 +106,9 @@ public class RecordController<R, PK, F extends DBField> implements RecordModelLi
     MasterEventBus.postChangeRecordEvent(record);
   }
 
+  /**
+   * And a new, blank record to the end of the model.
+   */
   public void addBlankRecord() {
     // If the last record is already blank, just go to it
     final int lastIndex = model.getSize() - 1;
@@ -109,6 +139,12 @@ public class RecordController<R, PK, F extends DBField> implements RecordModelLi
     }
   }
 
+  /**
+   * Finds the specified text in the specified field, and display them in the user interface.
+   * @param dirtyText The text to find, uncleaned
+   * @param field The field in which to search
+   * @param searchOption The selected search option
+   */
   public void findTextInField(String dirtyText, final F field, SearchOption searchOption) {
     //noinspection TooBroadScope
     String text = dirtyText.trim();
@@ -195,6 +231,13 @@ public class RecordController<R, PK, F extends DBField> implements RecordModelLi
     
   }
 
+  /**
+   * Finds records holding the search text, in the specified field, or anywhere, depending on the value of searchField.
+   * @param searchField The field in which to search, which could be all fields
+   * @param searchOption The user-selected search option
+   * @param searchText The text to search for
+   * @return A collection of the found records.
+   */
   public Collection<@NonNull R> retrieveNow(final F searchField, final SearchOption searchOption, final String searchText) {
     try {
       if (searchField.isField()) {
@@ -213,6 +256,11 @@ public class RecordController<R, PK, F extends DBField> implements RecordModelLi
     loadNewRecord(model.getFoundRecord());
   }
 
+  /**
+   * Delete the specified record
+   * @param selectedRecord The record to delete
+   * @throws SQLException Most likely if the record is not found.
+   */
   public void delete(final R selectedRecord) throws SQLException {
     dao.delete(selectedRecord);
   }
