@@ -1,20 +1,33 @@
 package com.neptunedreams.framework.ui;
 
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.util.Objects;
+import javax.swing.AbstractAction;
 import javax.swing.AbstractButton;
+import javax.swing.ActionMap;
+import javax.swing.FocusManager;
+import javax.swing.InputMap;
 import javax.swing.JComponent;
 import javax.swing.JLayer;
+import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.plaf.LayerUI;
+import javax.swing.text.JTextComponent;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jetbrains.annotations.NonNls;
+import org.jetbrains.annotations.NotNull;
+
+import static javax.swing.JComponent.*;
 
 /**
  * SwipeView adds a swipe special effect to a Component. This draws a swipe-right or swipe-left effect on a chosen 
@@ -28,6 +41,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * @author Miguel Mu\u00f1oz
  */
 public final class SwipeView<C extends JComponent> extends LayerUI<C> {
+  /**
+   * @param recordView The view to wrap with a swipe action
+   * @param <J> The component type
+   * @return A SwipeView that wraps the specified view
+   */
   @SuppressWarnings("WeakerAccess")
   public static <J extends JComponent> SwipeView<J> wrap(J recordView) {
     JLayer<J> jLayer = new JLayer<>(recordView);
@@ -151,6 +169,107 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
   }
 
   /**
+   * Assign a non-repeating action to the keystroke. The action will be performed on the keystroke, followed by a 
+   * swipe animation in the specified direction.
+   * @param name The name of the action. Must be unique
+   * @param key the key value, from KeyEvent, such as KeyEvent.VK_X
+   * @param modifiers The modifiers
+   * @param operation The operation to perform
+   * @param swipeDirection The swipe direction
+   * @see java.awt.event.KeyEvent
+   */
+  public void assignKeyStrokeAction(
+      String name,
+      int key,
+      int modifiers,
+      Runnable operation,
+      SwipeDirection swipeDirection
+  ) {
+    Runnable fullOperation;
+    fullOperation = getSwipeOperation(operation, swipeDirection);
+    installKeystrokeAction(liveComponent, name, key, modifiers, fullOperation);
+  }
+
+  @NotNull
+  private Runnable getSwipeOperation(final Runnable operation, final SwipeDirection swipeDirection) {
+    final Runnable fullOperation;
+    switch (swipeDirection) {
+      case SWIPE_LEFT:
+        fullOperation = () -> swipeLeft(operation);
+        break;
+      case SWIPE_RIGHT:
+        fullOperation = () -> swipeRight(operation);
+        break;
+      default:
+        throw new AssertionError(String.format("Unsupported Swipe Direction: %s", swipeDirection));
+    }
+    return fullOperation;
+  }
+
+  /**
+   * Assign a repeating action to the keystroke. It will repeat as long as the key is held down, with one swipe
+   * per repeat.
+   * @param key The key value, from constants defined in KeyEvent, such as KeyEvent.VK_X
+   * @param modifiers The modifiers
+   * @param name The name, which should be unique
+   * @param operation The operation to perform
+   * @param swipeDirection the swipe direction
+   * @see java.awt.event.KeyEvent
+   */
+  public void assignRepeatingKeystrokeAction(
+      String name,
+      int key,
+      int modifiers,
+      Runnable operation,
+      SwipeDirection swipeDirection
+  ) {
+    final KeyStrokeTracker keyStrokeTracker = new KeyStrokeTracker(operation, swipeDirection);
+    KeyStroke pressedKeyStroke = KeyStroke.getKeyStroke(key, modifiers);
+    KeyStroke releasedKeyStroke = KeyStroke.getKeyStroke(key, modifiers, true);
+    JComponent lastAncestor = getLastAncestorOf(liveComponent);
+    InputMap inputMap = lastAncestor.getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+    @NonNls String pressedName = "pressed " + name;
+    inputMap.put(pressedKeyStroke, pressedName);
+    @NonNls String releasedName = "released " + name;
+    inputMap.put(releasedKeyStroke, releasedName);
+    ActionMap actionMap = lastAncestor.getActionMap();
+    
+    actionMap.put(pressedName, new AbstractAction(pressedName) {
+      @Override
+      public void actionPerformed(final ActionEvent e) {
+        keyStrokeTracker.keyPressed();
+      }
+
+      @Override
+      public AbstractAction clone() throws CloneNotSupportedException {
+        throw new CloneNotSupportedException("Clone not supported for Action");
+      }
+    });
+    
+    actionMap.put(releasedName, new AbstractAction(releasedName) {
+      @Override
+      public void actionPerformed(final ActionEvent e) {
+        keyStrokeTracker.keyReleased();
+      }
+
+      @Override
+      public AbstractAction clone() throws CloneNotSupportedException {
+        throw new CloneNotSupportedException("Clone not supported for Action");
+      }
+    });
+  }
+  
+  private JComponent getLastAncestorOf(JComponent component) {
+    JComponent previousParent = component;
+    Container parent = component.getParent();
+    while (parent instanceof JComponent) {
+      previousParent = (JComponent) parent;
+      parent = previousParent.getParent();
+    }
+    return previousParent;
+  }
+
+  /**
    * This lets you assign an action to a button that executes on mouseStillDown, but only when animation has completed.
    * This lets the user, say, hold an arrow button down and watch it page through the entries, animating each new page.
    * This method effectively replaces a call to addActionListener. Don't use that method if you're using this one.
@@ -158,11 +277,11 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
    * Todo: Add Keystroke tracking
    * @param button The button to apply the mouseDown action to
    * @param operation The code to execute when the mouse is down.
-   * @param swipeRight True for swipeRight, false for swipe left
+   * @param swipeDirection The swipe direction
    */
   @SuppressWarnings("WeakerAccess")
-  public void assignMouseDownAction(AbstractButton button, Runnable operation, SwipeDirection swipeRight) {
-    MouseTracker mouseTracker = new MouseTracker(operation, swipeRight);
+  public void assignMouseDownAction(AbstractButton button, Runnable operation, SwipeDirection swipeDirection) {
+    MouseTracker mouseTracker = new MouseTracker(operation, swipeDirection);
     button.addMouseListener(mouseTracker);
   }
   
@@ -212,6 +331,66 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
       if (tracking) {
         active = true;
       }
+    }
+  }
+  
+  private class KeyStrokeTracker {
+    private boolean active = false;
+    private Timer timer = new Timer(frameMillis, null);
+//    private final SwipeDirection direction;
+
+    KeyStrokeTracker(Runnable operation, SwipeDirection swipeDirection) {
+      ActionListener actionListener = (e) -> {
+        if (active && !isAnimating) {
+          swipe(operation, swipeDirection);
+        }
+      };
+      timer.addActionListener(actionListener);
+    }
+
+    void keyPressed() {
+      active = true;
+      timer.start();
+    }
+
+    void keyReleased() {
+      active = false;
+      timer.stop();
+    }
+  }
+  
+  private static void installKeystrokeAction(JComponent view, final String name, int key, int modifiers, Runnable theOp) {
+    KeystrokeAction keystrokeAction = new KeystrokeAction(name, theOp);
+    KeyStroke keyStroke = KeyStroke.getKeyStroke(key, modifiers);
+    InputMap inputMap = view.getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+    ActionMap actionMap = view.getActionMap();
+    inputMap.put(keyStroke, name);
+    actionMap.put(name, keystrokeAction);
+  }
+
+  private static final class KeystrokeAction extends AbstractAction {
+    private final Runnable operation;
+    private FocusManager focusManager = FocusManager.getCurrentManager();
+
+
+    private KeystrokeAction(final String name, final Runnable theOp) {
+      super(name);
+      operation = theOp;
+    }
+
+    @Override
+    public void actionPerformed(final ActionEvent e) {
+      final Component owner = focusManager.getPermanentFocusOwner();
+      // The second half of this conditional doesn't work. It may be because the text components already have
+      // KeyStrokes mapped to arrow keys.
+      if ((!(owner instanceof JTextComponent)) || (((JTextComponent) owner).getText().isEmpty())) {
+        operation.run();
+      }
+    }
+
+    @Override
+    public KeystrokeAction clone() throws CloneNotSupportedException {
+      throw new CloneNotSupportedException("KeystrokeAction.clone() is not supported");
     }
   }
 }
