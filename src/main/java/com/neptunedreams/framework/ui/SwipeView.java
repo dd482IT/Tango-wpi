@@ -187,7 +187,7 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
   ) {
     Runnable fullOperation;
     fullOperation = getSwipeOperation(operation, swipeDirection);
-    installKeystrokeAction(liveComponent, name, key, modifiers, fullOperation);
+    installKeystrokeAction(getLastAncestorOf(liveComponent), name, key, modifiers, fullOperation);
   }
 
   @NotNull
