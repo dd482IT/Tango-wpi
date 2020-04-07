@@ -20,6 +20,9 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Used to search for text in a series of text components. Search takes place within a single database result.
+ * <p> Note that the {@code hasNext()}, {@code hasPrevious()}, {@code goToNext()} and {@code goToPrevious()} don't behave they way they do
+ * in ListIterator. In ListIterator, if I say listIterator.next(), followed by listIterator.previous(), I will get the same item as last
+ * time. To avoid this, when we change direction, we throw away the first item in the new direction.
  * <p>Created by IntelliJ IDEA.
  * <p>Date: 4/4/20
  * <p>Time: 7:42 AM
@@ -64,13 +67,13 @@ public class FieldIterator {
       // skip the searching!
       return searchTermElements;
     }
-    for (JTextComponent component: componentList) {
-      String cText = component.getText();
-      if (!cText.isEmpty()) {
-        System.out.printf("First text: <%s>%n", cText);
-        break;
-      }
-    }
+//    for (JTextComponent component: componentList) {
+//      String cText = component.getText();
+//      if (!cText.isEmpty()) {
+//        System.out.printf("First text: <%s>%n", cText);
+//        break;
+//      }
+//    }
     for (JTextComponent component: componentList) {
       String componentText = component.getText().toUpperCase();
       for (String term: allTerms) {
@@ -89,27 +92,44 @@ public class FieldIterator {
   }
 
   /**
-   * true of another match is found in the current page
-   * @return true iff another match exists
+   * Returns true if another match is found in the current page. If the current direction is BACKWARD, sets it to Forward and skips past 
+   * the first entry to avoid returning it twice in a row.  Note that this does not use the logic of a ListIterator.
+   * @return true iff a next match exists on the current page.
    */
   public boolean hasNext() {
+    if (direction == Direction.BACKWARD) {
+      if (listIterator.hasNext()) {
+        direction = Direction.FORWARD;
+        if (listIterator.hasNext()) {
+          listIterator.next();
+        }
+      }
+    }
     return listIterator.hasNext();
   }
 
   /**
-   * does a previous match exist on the current page
-   * @return true iff a previous match exists
+   * Returns true if a previous match is found in the current page. If the current direction is FORWARD, sets it to BACKWARD and skips past
+   * the first entry to avoid returning it twice in a row. Note that this does not use the logic of a ListIterator.
+   * @return true iff a previous match exists on the current page.
    */
   public boolean hasPrevious() {
+    if (direction == Direction.FORWARD) {
+      if (listIterator.hasPrevious()) {
+        direction = Direction.BACKWARD;
+        if (listIterator.hasPrevious()) {
+          listIterator.previous();
+        }
+      }
+    }
     return listIterator.hasPrevious();
   }
 
   /**
-   * Goes to the next match on the page, selects it, and if necessary, scroll the field to the selected text.
+   * Goes to the next match on the page, selects it, and if necessary, scroll the field to the selected text. This should only be called
+   * after a call to hasNext(), which will reverse the direction if necessary.
    */
   public void goToNext() {
-    // IMPLEMENTATION DETAIL: If I say listIterator.next(), followed by listIterator.previous(), I will get the same item twice. So when
-    // we change direction, we need to throw away the first item in the new direction.
     if (direction == Direction.BACKWARD) {
       listIterator.next();
       direction = Direction.FORWARD;
@@ -119,7 +139,8 @@ public class FieldIterator {
   }
 
   /**
-   * Goes to the previous match on the page, selects it, and if necessary, scroll the field to the selected text.
+   * Goes to the previous match on the page, selects it, and if necessary, scroll the field to the selected text. This should only be called
+   * after a call to hasPrevious(), which will reverse the direction if necessary.
    */
   public void goToPrevious() {
     // IMPLEMENTATION DETAIL: See the implementation detail in goToNext().

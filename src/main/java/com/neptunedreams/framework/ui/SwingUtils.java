@@ -8,6 +8,8 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.event.AncestorEvent;
+import javax.swing.event.AncestorListener;
 import javax.swing.text.Caret;
 import javax.swing.text.DefaultCaret;
 import javax.swing.text.JTextComponent;
@@ -67,6 +69,11 @@ public enum SwingUtils {
     return wrapper;
   }
 
+  /**
+   * Wrap the specified component into the center of a new JPanel.
+   * @param component The component to wrap
+   * @return The containing JPanel
+   */
   public static JPanel wrapCenter(JComponent component) {
     JPanel flowPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
     flowPanel.add(component);
@@ -169,5 +176,28 @@ public enum SwingUtils {
     }
     component.setCaret(caret);
     caret.setBlinkRate(blinkRate); // Starts the new caret blinking.
+  }
+
+  /**
+   * Perform the specified action a single time, when the component is first displayed. This is useful, for example, for actions that
+   * require a root pane, and so can't be done when the object is constructed.
+   * @param component The component
+   * @param action The action to preform when a component is first displayed.
+   */
+  public static void executeOnDisplay(JComponent component, Runnable action) {
+    AncestorListener ancestorListener = new AncestorListener() {
+      @Override
+      public void ancestorAdded(final AncestorEvent event) {
+        action.run();
+        event.getComponent().removeAncestorListener(this);
+      }
+
+      @Override
+      public void ancestorRemoved(final AncestorEvent event) { }
+
+      @Override
+      public void ancestorMoved(final AncestorEvent event) { }
+    };
+    component.addAncestorListener(ancestorListener);
   }
 }

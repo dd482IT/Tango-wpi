@@ -100,6 +100,20 @@ public enum Keystrokes {
     actionMap.put(name, keystrokeAction);
   }
 
+  /**
+   * Prints the ancestry of the component. For debugging only
+   * @param component The component
+   */
+  @SuppressWarnings({"UseOfSystemOutOrSystemErr", "HardCodedStringLiteral"})
+  public static void printAncestry(JComponent component) {
+    System.out.printf("C: %s%n", component.getClass());
+    Container parent = component.getParent();
+    while (parent != null) {
+      System.out.printf("-> %s%n", parent.getClass());
+      parent = parent.getParent();
+    }
+  }
+
   private static final class KeystrokeAction extends AbstractAction {
     private final Runnable operation;
 

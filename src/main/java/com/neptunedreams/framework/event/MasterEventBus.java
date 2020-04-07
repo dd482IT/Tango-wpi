@@ -26,7 +26,11 @@ public final class MasterEventBus {
 
   @SuppressWarnings("HardCodedStringLiteral")
   private static EventBus master = new EventBus("master");
-  
+
+  /**
+   * Register an instance with the master event bus
+   * @param eventHandlerInstance The instance to register
+   */
   public static void registerMasterEventHandler(Object eventHandlerInstance) {
     master.register(eventHandlerInstance);
   }
@@ -39,38 +43,69 @@ public final class MasterEventBus {
 
   // Simple public Event Classes (Classes that have no data)
 
+  /**
+   * A new record has been chosen and now needs to be loaded.
+   */
   public static final class LoadUIEvent { }
+
+  /**
+   * The user interface has created a new, blank record.
+   */
   public static final class UserRequestedNewRecordEvent { }
+
+  /**
+   * The user interface has changed the search requirements and a new search should be initiated.
+   */
   public static final class SearchNowEvent { }
+
+  /**
+   * A new record has been chosen, and all model-changed events have been fired.
+   */
   public static final class DataModelChangedEvent { }
   
   // Public post methods
 
+  /**
+   * post a loadUserData message
+   */
   public static void postLoadUserData() {
-    System.out.println("MasterEventBus.postLoadUserData");
     master.post(uiEvent);
   }
 
+  /**
+   * post a userRequestedNewRecordEvent message
+   */
   public static void postUserRequestedNewRecordEvent() {
-    System.out.println("MasterEventBus.postUserRequestedNewRecordEvent");
     master.post(userRequestedNewRecordEvent);
   }
 
+  /**
+   * post a searchNowEvent message
+   */
   public static void postSearchNowEvent() {
-    System.out.println("MasterEventBus.postSearchNowEvent");
     master.post(searchNowEvent);
   }
 
+  /**
+   * post a dataModelChangedEvent
+   */
   public static void postDataModelChangedEvent() {
-    System.out.println("MasterEventBus.postDataModelChangedEvent");
     master.post(dataModelChangedEvent);
   }
 
+  /**
+   * post a ChangeRecordEvent message
+   * @param record The affected record
+   * @param <R> The type of the record
+   */
   public static <R> void postChangeRecordEvent(R record) {
-    System.out.println("MasterEventBus.postChangeRecordEvent");
     master.post(new ChangeRecord<>(record));
   }
 
+  /**
+   * Log an error, just in case this gets called.
+   * @param deadEvent The dead event
+   */
   @Subscribe
   public void showDeadEvent(DeadEvent deadEvent) {
     //noinspection UseOfSystemOutOrSystemErr,HardCodedStringLiteral
