@@ -9,7 +9,7 @@ import com.google.common.eventbus.Subscribe;
  * are static methods in this class. This makes it easier to keep track of the events.
  * <p>
  * Under no circumstances should the EventBus instance be made available to other classes. By requiring all posts
- * to be done by static methods, we make it possible to use multiple EventBusses in a project, each with its own 
+ * to be done by static methods, we make it possible to use multiple EventBuses in a project, each with its own 
  * set of post methods. This design guarantee that a message can't get posted to the wrong EventBus.
  * The only mistake that can get made is registering a class with the wrong event bus. Consequently, 
  * each facade class should also have a unique name for its register method.
@@ -35,28 +35,39 @@ public final class MasterEventBus {
   private static final LoadUIEvent uiEvent = new LoadUIEvent();
   private static final SearchNowEvent searchNowEvent = new SearchNowEvent();
   private static final UserRequestedNewRecordEvent userRequestedNewRecordEvent = new UserRequestedNewRecordEvent();
+  private static final DataModelChangedEvent dataModelChangedEvent = new DataModelChangedEvent();
 
   // Simple public Event Classes (Classes that have no data)
 
   public static final class LoadUIEvent { }
   public static final class UserRequestedNewRecordEvent { }
   public static final class SearchNowEvent { }
+  public static final class DataModelChangedEvent { }
   
   // Public post methods
 
   public static void postLoadUserData() {
+    System.out.println("MasterEventBus.postLoadUserData");
     master.post(uiEvent);
   }
 
   public static void postUserRequestedNewRecordEvent() {
+    System.out.println("MasterEventBus.postUserRequestedNewRecordEvent");
     master.post(userRequestedNewRecordEvent);
   }
 
   public static void postSearchNowEvent() {
+    System.out.println("MasterEventBus.postSearchNowEvent");
     master.post(searchNowEvent);
   }
 
+  public static void postDataModelChangedEvent() {
+    System.out.println("MasterEventBus.postDataModelChangedEvent");
+    master.post(dataModelChangedEvent);
+  }
+
   public static <R> void postChangeRecordEvent(R record) {
+    System.out.println("MasterEventBus.postChangeRecordEvent");
     master.post(new ChangeRecord<>(record));
   }
 

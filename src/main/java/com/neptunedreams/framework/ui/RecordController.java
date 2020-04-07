@@ -3,7 +3,6 @@ package com.neptunedreams.framework.ui;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.StringTokenizer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import com.neptunedreams.framework.ErrorReport;
@@ -14,6 +13,7 @@ import com.neptunedreams.framework.data.RecordModelListener;
 import com.neptunedreams.framework.data.RecordSelectionModel;
 import com.neptunedreams.framework.data.SearchOption;
 import com.neptunedreams.framework.event.MasterEventBus;
+import com.neptunedreams.util.StringStuff;
 import org.checkerframework.checker.initialization.qual.NotOnlyInitialized;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -129,6 +129,10 @@ public final class RecordController<R, PK, F extends DBField> implements RecordM
     }
   }
 
+  /**
+   * This executes on the event thread. It gets called when a search is done and new records are set.
+   * @param theFoundItems
+   */
   public void setFoundRecords(final Collection<@NonNull ? extends R> theFoundItems) {
     model.setNewList(theFoundItems);
     if (model.getSize() > 0) {
@@ -168,25 +172,13 @@ public final class RecordController<R, PK, F extends DBField> implements RecordM
         case findWhole:
           return dao.findInField(text, field, getOrder());
         case findAll:
-          return dao.findAllInField(field, getOrder(), parseText(text));
+          return dao.findAllInField(field, getOrder(), StringStuff.splitText(text));
         case findAny:
-          return dao.findAnyInField(field, getOrder(), parseText(text));
+          return dao.findAnyInField(field, getOrder(), StringStuff.splitText(text));
         default:
           throw new AssertionError(String.format("Unhandled case: %s", searchOption));
       }
     }
-  }
-
-  String[] parseText(@NonNull String text) {
-    //noinspection EqualsReplaceableByObjectsCall
-    assert text.trim().equals(text); // text should already be trimmed
-    StringTokenizer tokenizer = new StringTokenizer(text, " ");
-    String[] tokens = new String[tokenizer.countTokens()];
-    int i = 0;
-    while (tokenizer.hasMoreTokens()) {
-      tokens[i++] = tokenizer.nextToken();
-    }
-    return tokens;
   }
 
   /**
@@ -217,11 +209,11 @@ public final class RecordController<R, PK, F extends DBField> implements RecordM
         case findWhole:
           return dao.find(text, getOrder());
         case findAll:
-          return dao.findAll(getOrder(), parseText(text));
+          return dao.findAll(getOrder(), StringStuff.splitText(text));
         case findAny:
-          return dao.findAny(getOrder(), parseText(text));
+          return dao.findAny(getOrder(), StringStuff.splitText(text));
         default:
-          throw new AssertionError(String.format("Unhandled case: %s", searchOption));  
+          throw new AssertionError(String.format("Unhandled case: %s", searchOption));
       }
     }
   }

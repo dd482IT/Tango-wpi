@@ -1,7 +1,5 @@
 package com.neptunedreams.framework.ui;
 
-import java.awt.Component;
-import java.awt.Container;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -14,7 +12,6 @@ import java.util.Objects;
 import javax.swing.AbstractAction;
 import javax.swing.AbstractButton;
 import javax.swing.ActionMap;
-import javax.swing.FocusManager;
 import javax.swing.InputMap;
 import javax.swing.JComponent;
 import javax.swing.JLayer;
@@ -22,7 +19,6 @@ import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.plaf.LayerUI;
-import javax.swing.text.JTextComponent;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
@@ -169,12 +165,14 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
   }
 
   /**
-   * Assign a non-repeating action to the keystroke. The action will be performed on the keystroke, followed by a 
-   * swipe animation in the specified direction.
-   * @param name The name of the action. Must be unique
-   * @param key the key value, from KeyEvent, such as KeyEvent.VK_X
-   * @param modifiers The modifiers
-   * @param operation The operation to perform
+   * Assign a non-repeating action to the keystroke. The action will be performed on the keystroke, followed by a
+   * swipe animation in the specified direction.<p>
+   * For keystrokes that are already defined for JTextComponents, such as the arrow keys, use installRestrictedKeystrokeAction() 
+   *
+   * @param name           The name of the action. Must be unique
+   * @param key            the key value, from KeyEvent, such as KeyEvent.VK_X
+   * @param modifiers      The modifiers
+   * @param operation      The operation to perform
    * @param swipeDirection The swipe direction
    * @see java.awt.event.KeyEvent
    */
@@ -186,12 +184,42 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
       SwipeDirection swipeDirection
   ) {
     Runnable fullOperation;
-    fullOperation = getSwipeOperation(operation, swipeDirection);
-    installKeystrokeAction(getLastAncestorOf(liveComponent), name, key, modifiers, fullOperation);
+    fullOperation = createAnimatedAction(operation, swipeDirection);
+    Keystrokes.installKeystrokeAction(Keystrokes.getLastAncestorOf(liveComponent), name, key, modifiers, fullOperation);
   }
 
+  /**
+   * Assign a non-repeating action to the keystroke. The action will be performed on the keystroke, followed by a 
+   * swipe animation in the specified direction. It's "restricted" because it does not get invoked when the focus is
+   * held by a JTextComponent or one of its subclasses. This is intended only for keystrokes that already have defined actions for
+   * JTextComponents, such as the arrow keys.
+   * @param name The name of the action. Must be unique
+   * @param key the key value, from KeyEvent, such as KeyEvent.VK_X
+   * @param modifiers The modifiers
+   * @param operation The operation to perform
+   * @param swipeDirection The swipe direction
+   * @see java.awt.event.KeyEvent
+   */
+  public void assignRestrictedKeyStrokeAction(
+      String name,
+      int key,
+      int modifiers,
+      Runnable operation,
+      SwipeDirection swipeDirection
+  ) {
+    Runnable fullOperation;
+    fullOperation = createAnimatedAction(operation, swipeDirection);
+    Keystrokes.installRestrictedKeystrokeAction(Keystrokes.getLastAncestorOf(liveComponent), name, key, modifiers, fullOperation);
+  }
+
+  /**
+   * wraps an ordinary action with an animation, to create an animated action;
+   * @param operation The operation to perform with the animation
+   * @param swipeDirection The animation
+   * @return An animated action
+   */
   @NotNull
-  private Runnable getSwipeOperation(final Runnable operation, final SwipeDirection swipeDirection) {
+  public Runnable createAnimatedAction(final Runnable operation, final SwipeDirection swipeDirection) {
     final Runnable fullOperation;
     switch (swipeDirection) {
       case SWIPE_LEFT:
@@ -205,10 +233,17 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
     }
     return fullOperation;
   }
+  
+  public static <C extends JComponent> void animateAction(C view, Runnable action, SwipeDirection direction) {
+    JLayer<?> animatingAncestor = Keystrokes.getSpecificAncestorOf(view, JLayer.class);
+    @SuppressWarnings("unchecked") SwipeView<C> swipeView = (SwipeView<C>) animatingAncestor.getUI();
+    swipeView.createAnimatedAction(action, direction).run();
+  }
 
   /**
    * Assign a repeating action to the keystroke. It will repeat as long as the key is held down, with one swipe
-   * per repeat.
+   * per repeat. It's "restricted" because it does not get invoked when the focus is held by a JTextComponent or one of its subclasses. 
+   * This is intended only for keystrokes that already have defined actions for JTextComponents, such as the arrow keys.
    * @param key The key value, from constants defined in KeyEvent, such as KeyEvent.VK_X
    * @param modifiers The modifiers
    * @param name The name, which should be unique
@@ -216,7 +251,7 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
    * @param swipeDirection the swipe direction
    * @see java.awt.event.KeyEvent
    */
-  public void assignRepeatingKeystrokeAction(
+  public void assignRestrictedRepeatingKeystrokeAction(
       String name,
       int key,
       int modifiers,
@@ -226,7 +261,7 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
     final KeyStrokeTracker keyStrokeTracker = new KeyStrokeTracker(operation, swipeDirection);
     KeyStroke pressedKeyStroke = KeyStroke.getKeyStroke(key, modifiers);
     KeyStroke releasedKeyStroke = KeyStroke.getKeyStroke(key, modifiers, true);
-    JComponent lastAncestor = getLastAncestorOf(liveComponent);
+    JComponent lastAncestor = Keystrokes.getLastAncestorOf(liveComponent);
     InputMap inputMap = lastAncestor.getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
     @NonNls String pressedName = "pressed " + name;
     inputMap.put(pressedKeyStroke, pressedName);
@@ -257,16 +292,6 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
         throw new CloneNotSupportedException("Clone not supported for Action");
       }
     });
-  }
-  
-  private JComponent getLastAncestorOf(JComponent component) {
-    JComponent previousParent = component;
-    Container parent = component.getParent();
-    while (parent instanceof JComponent) {
-      previousParent = (JComponent) parent;
-      parent = previousParent.getParent();
-    }
-    return previousParent;
   }
 
   /**
@@ -356,41 +381,6 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
     void keyReleased() {
       active = false;
       timer.stop();
-    }
-  }
-  
-  private static void installKeystrokeAction(JComponent view, final String name, int key, int modifiers, Runnable theOp) {
-    KeystrokeAction keystrokeAction = new KeystrokeAction(name, theOp);
-    KeyStroke keyStroke = KeyStroke.getKeyStroke(key, modifiers);
-    InputMap inputMap = view.getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
-    ActionMap actionMap = view.getActionMap();
-    inputMap.put(keyStroke, name);
-    actionMap.put(name, keystrokeAction);
-  }
-
-  private static final class KeystrokeAction extends AbstractAction {
-    private final Runnable operation;
-    private FocusManager focusManager = FocusManager.getCurrentManager();
-
-
-    private KeystrokeAction(final String name, final Runnable theOp) {
-      super(name);
-      operation = theOp;
-    }
-
-    @Override
-    public void actionPerformed(final ActionEvent e) {
-      final Component owner = focusManager.getPermanentFocusOwner();
-      // The second half of this conditional doesn't work. It may be because the text components already have
-      // KeyStrokes mapped to arrow keys.
-      if ((!(owner instanceof JTextComponent)) || (((JTextComponent) owner).getText().isEmpty())) {
-        operation.run();
-      }
-    }
-
-    @Override
-    public KeystrokeAction clone() throws CloneNotSupportedException {
-      throw new CloneNotSupportedException("KeystrokeAction.clone() is not supported");
     }
   }
 }

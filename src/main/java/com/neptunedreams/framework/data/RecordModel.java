@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import com.neptunedreams.framework.event.MasterEventBus;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
@@ -25,6 +26,7 @@ public class RecordModel<R> implements Serializable {
   private int recordIndex = 0;
   private final Supplier<@NonNull R> constructor;
   private @NonNull Function<R, Integer> getIdFunction;
+  private boolean isDirectionForward = true;
 
   public RecordModel(Supplier<@NonNull R> theConstructor, @NonNull Function<R, Integer> getIdFunction) {
     constructor = theConstructor;
@@ -112,6 +114,7 @@ public class RecordModel<R> implements Serializable {
     for (RecordModelListener modelListener: listenerList) {
       modelListener.indexChanged(i, prior);
     }
+    MasterEventBus.postDataModelChangedEvent();
   }
 
   public void append(@NonNull R insertedRecord) {
