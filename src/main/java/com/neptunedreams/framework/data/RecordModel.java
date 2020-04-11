@@ -114,7 +114,6 @@ public class RecordModel<R> implements Serializable {
     for (RecordModelListener modelListener: listenerList) {
       modelListener.indexChanged(i, prior);
     }
-    MasterEventBus.postDataModelChangedEvent();
   }
 
   public void append(@NonNull R insertedRecord) {
@@ -124,7 +123,7 @@ public class RecordModel<R> implements Serializable {
     fireModelListChanged();
   }
 
-  public @NonNull R getFoundRecord() {
+  public @NonNull R getFoundRecord() { // TODO: rename to getCurrentRecord()? 
     if (!foundItems.isEmpty()) {
       return foundItems.get(recordIndex);
 //      assert foundRecord != null;

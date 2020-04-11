@@ -34,15 +34,20 @@ public class FieldIterator {
   private final List<JTextComponent> componentList;
   private final ListIterator<SearchTermElement> listIterator;
   private Direction direction;
+  @SuppressWarnings("FieldCanBeLocal")
+  private final boolean isEmpty;
+  private final int id;
 
   /**
    * Iterates through all found strings on the current on-screen result 
    * @param componentList List of components to search
    * @param direction Direction to search initially
+   * @param id The id of the currently-displayed record
    * @param searchTerms Terms to search for
    */
-  public FieldIterator(Collection<JTextComponent> componentList, Direction direction, String... searchTerms) {
+  public FieldIterator(Collection<JTextComponent> componentList, Direction direction, int id, String... searchTerms) {
     this.componentList = new ArrayList<>(componentList);
+    this.id = id;
     final List<SearchTermElement> searchTermElements = new LinkedList<>(assembleIterator(searchTerms));
     listIterator = searchTermElements.listIterator();
     this.direction = direction;
@@ -52,6 +57,7 @@ public class FieldIterator {
         listIterator.next();
       }
     }
+    isEmpty = searchTermElements.isEmpty();
   }
 
   @RequiresNonNull("componentList")
@@ -62,18 +68,11 @@ public class FieldIterator {
         .filter(s -> !s.isEmpty())
         .collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(String::length).thenComparing(String::toString))));
     int componentIndex = 0;
-    Set<SearchTermElement> searchTermElements = new TreeSet<>();
+    Set<SearchTermElement> localSearchTermElements = new TreeSet<>();
     if (allTerms.isEmpty()) {
       // skip the searching!
-      return searchTermElements;
+      return localSearchTermElements;
     }
-//    for (JTextComponent component: componentList) {
-//      String cText = component.getText();
-//      if (!cText.isEmpty()) {
-//        System.out.printf("First text: <%s>%n", cText);
-//        break;
-//      }
-//    }
     for (JTextComponent component: componentList) {
       String componentText = component.getText().toUpperCase();
       for (String term: allTerms) {
@@ -81,14 +80,14 @@ public class FieldIterator {
         while (index >= 0) {
           index = componentText.indexOf(term, index);
           if (index >= 0) {
-            searchTermElements.add(new SearchTermElement(term, index, componentIndex));
+            localSearchTermElements.add(new SearchTermElement(term, index, componentIndex));
             index++;
           }
         }
       }
       componentIndex++;
     }
-    return searchTermElements;
+    return localSearchTermElements;
   }
 
   /**
@@ -98,11 +97,9 @@ public class FieldIterator {
    */
   public boolean hasNext() {
     if (direction == Direction.BACKWARD) {
+      direction = Direction.FORWARD;
       if (listIterator.hasNext()) {
-        direction = Direction.FORWARD;
-        if (listIterator.hasNext()) {
-          listIterator.next();
-        }
+        listIterator.next();
       }
     }
     return listIterator.hasNext();
@@ -115,11 +112,9 @@ public class FieldIterator {
    */
   public boolean hasPrevious() {
     if (direction == Direction.FORWARD) {
+      direction = Direction.BACKWARD;
       if (listIterator.hasPrevious()) {
-        direction = Direction.BACKWARD;
-        if (listIterator.hasPrevious()) {
-          listIterator.previous();
-        }
+        listIterator.previous();
       }
     }
     return listIterator.hasPrevious();
@@ -130,6 +125,11 @@ public class FieldIterator {
    * after a call to hasNext(), which will reverse the direction if necessary.
    */
   public void goToNext() {
+    // IMPLEMENTATION DETAIL: This wraps a ListIterator, but changes the behavior. On a ListIterator, if I call next() followed by
+    // previous(), I will get the same object twice in a row. That's because the iterator has already moved past that object, so it finds
+    // it again when it changes direction. I don't want this behavior, so when the user changes direction, I skip past the first one I
+    // find.
+    if (isEmpty) { return; }
     if (direction == Direction.BACKWARD) {
       listIterator.next();
       direction = Direction.FORWARD;
@@ -143,6 +143,7 @@ public class FieldIterator {
    * after a call to hasPrevious(), which will reverse the direction if necessary.
    */
   public void goToPrevious() {
+    if (isEmpty()) { return; }
     // IMPLEMENTATION DETAIL: See the implementation detail in goToNext().
     if (direction == Direction.FORWARD) {
       listIterator.previous();
@@ -161,6 +162,10 @@ public class FieldIterator {
     SwingUtilities.invokeLater(container::requestFocus);
   }
   
+  public int getId() {
+    return id;
+  }
+
   static class SearchTermElement implements Comparable<SearchTermElement> {
     private final int charIndex;
     private final String termUpperCase;
@@ -212,6 +217,10 @@ public class FieldIterator {
       return searchTermElementComparator
           .compare(this, o);
     }
+  }
+
+  public boolean isEmpty() {
+    return isEmpty;
   }
 
   public Direction getDirection() {

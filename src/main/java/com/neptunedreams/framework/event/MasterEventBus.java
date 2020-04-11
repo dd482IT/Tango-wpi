@@ -39,7 +39,6 @@ public final class MasterEventBus {
   private static final LoadUIEvent uiEvent = new LoadUIEvent();
   private static final SearchNowEvent searchNowEvent = new SearchNowEvent();
   private static final UserRequestedNewRecordEvent userRequestedNewRecordEvent = new UserRequestedNewRecordEvent();
-  private static final DataModelChangedEvent dataModelChangedEvent = new DataModelChangedEvent();
 
   // Simple public Event Classes (Classes that have no data)
 
@@ -58,11 +57,6 @@ public final class MasterEventBus {
    */
   public static final class SearchNowEvent { }
 
-  /**
-   * A new record has been chosen, and all model-changed events have been fired.
-   */
-  public static final class DataModelChangedEvent { }
-  
   // Public post methods
 
   /**
@@ -84,13 +78,6 @@ public final class MasterEventBus {
    */
   public static void postSearchNowEvent() {
     master.post(searchNowEvent);
-  }
-
-  /**
-   * post a dataModelChangedEvent
-   */
-  public static void postDataModelChangedEvent() {
-    master.post(dataModelChangedEvent);
   }
 
   /**

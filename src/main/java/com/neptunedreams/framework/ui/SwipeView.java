@@ -233,11 +233,31 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
     }
     return fullOperation;
   }
-  
-  public static <C extends JComponent> void animateAction(C view, Runnable action, SwipeDirection direction) {
+
+  /**
+   * Animate the specifIed action, using the specified swipe
+   * @param view The view that is wrapped inside a SwipeView.
+   * @param action The action to perform before the animation
+   * @param direction the direction of the swipe
+   * @throws IllegalArgumentException if the view was not first wrapped inside a SwipeView
+   */
+  public static void animateAction(JComponent view, Runnable action, SwipeDirection direction) {
+    createAnimatedAction(view, action, direction).run();
+  }
+
+  /**
+   * Animate the action for the specified view.
+   * @param view the view that is wrapped inside a SwipeView
+   * @param action The action to perform
+   * @param direction The swipe direction
+   * @throws IllegalArgumentException if the view was not first wrapped inside a SwipeView
+   * @return A Runnable to perform the animated action.
+   */
+  @NotNull
+  public static Runnable createAnimatedAction(final JComponent view, final Runnable action, final SwipeDirection direction) {
     JLayer<?> animatingAncestor = Keystrokes.getSpecificAncestorOf(view, JLayer.class);
-    @SuppressWarnings("unchecked") SwipeView<C> swipeView = (SwipeView<C>) animatingAncestor.getUI();
-    swipeView.createAnimatedAction(action, direction).run();
+    @SuppressWarnings("unchecked") SwipeView<JComponent> swipeView = (SwipeView<JComponent>) animatingAncestor.getUI();
+    return swipeView.createAnimatedAction(action, direction);
   }
 
   /**

@@ -25,7 +25,7 @@ public class FieldIteratorTest {
     List<JTextComponent> components = getTextComponents();
     System.out.println("setup complete");
 
-    FieldIterator iterator = new FieldIterator(components, FieldIterator.Direction.FORWARD, "bravo", "foxtrot", "golf", "echo", "fox");
+    FieldIterator iterator = new FieldIterator(components, FieldIterator.Direction.FORWARD, 5, "bravo", "foxtrot", "golf", "echo", "fox");
     System.out.println("Iterator Constructed");
     assertTrue(iterator.hasNext());
     assertFalse(iterator.hasPrevious());
@@ -82,8 +82,15 @@ public class FieldIteratorTest {
   @Test
   public void testEmptyIterator() {
     List<JTextComponent> componentList = getTextComponents();
-    FieldIterator fieldIterator = new FieldIterator(componentList, FieldIterator.Direction.FORWARD, "");
+    FieldIterator fieldIterator = new FieldIterator(componentList, FieldIterator.Direction.FORWARD, 5, "");
     assertFalse(fieldIterator.hasPrevious());
     assertFalse(fieldIterator.hasNext());
+    assertEquals(5, fieldIterator.getId());
+    assertTrue(fieldIterator.isEmpty());
+    assertEquals(FieldIterator.Direction.FORWARD, fieldIterator.getDirection());
+    assertFalse(fieldIterator.hasPrevious());
+    assertEquals(FieldIterator.Direction.BACKWARD, fieldIterator.getDirection());
+    assertFalse(fieldIterator.hasNext());
+    assertEquals(FieldIterator.Direction.FORWARD, fieldIterator.getDirection());
   }
 }
