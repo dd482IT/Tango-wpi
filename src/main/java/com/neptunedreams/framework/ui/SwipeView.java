@@ -2,12 +2,15 @@ package com.neptunedreams.framework.ui;
 
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.lang.reflect.Field;
 import java.util.Objects;
 import javax.swing.AbstractAction;
 import javax.swing.AbstractButton;
@@ -19,6 +22,7 @@ import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.plaf.LayerUI;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
@@ -37,40 +41,87 @@ import static javax.swing.JComponent.*;
  * @author Miguel Mu\u00f1oz
  */
 public final class SwipeView<C extends JComponent> extends LayerUI<C> {
+
+  private static final int SCALE = calculateScaleForDefaultScreen();
+  private static final int HALF_SECOND = 500;
+
+  private static int calculateScaleForDefaultScreen() {
+    GraphicsDevice defaultScreenDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+    String javaVersion = System.getProperty("java.version");
+    
+    // The default transform for the device doesn't work on Java 8. It always returns the identity tranform, regardless of the screen.
+    // So we use this kludge for anything before Java 1.9.
+    if (javaVersion.compareTo("1.9") < 0) {
+      // 1.8 or before
+      try {
+        Field scaleField = defaultScreenDevice.getClass().getDeclaredField("scale");
+        scaleField.setAccessible(true);
+        Object fieldValue = scaleField.get(defaultScreenDevice);
+        if (fieldValue == null) {
+          return 1;
+        }
+        return (Integer) fieldValue;
+//        return scaleField.getInt(defaultScreenDevice);
+      } catch (IllegalAccessException | NoSuchFieldException e) {
+        e.printStackTrace();
+        return 1;
+      }
+    }
+    // scale will be 2.0 for a Retina screen, and 1.0 for an older screen
+    double scale = defaultScreenDevice
+        .getDefaultConfiguration()
+        .getDefaultTransform()
+        .getScaleX(); // Requires Java 9+ to work. Compiles under Java 8 but always returns 1.0.
+    //noinspection NumericCastThatLosesPrecision
+    return (int) Math.round(scale);
+  }
+
   /**
-   * @param recordView The view to wrap with a swipe action
+   * @param recordView The view to wrap with a swipe action with a duration of one half of a second.
    * @param <J> The component type
    * @return A SwipeView that wraps the specified view
    */
   @SuppressWarnings("WeakerAccess")
   public static <J extends JComponent> SwipeView<J> wrap(J recordView) {
-    JLayer<J> jLayer = new JLayer<>(recordView);
-    final SwipeView<J> ui = new SwipeView<>(recordView, jLayer);
+    return wrap(recordView, HALF_SECOND);
+  }
+
+  /**
+   * Wrap the specified JComponent instance in a SwipeView, specifying a duration for the swipe.
+   * @param view The view to wrap with a swipe action with a duration of the specified duration.
+   * @param durationMillis The duration of the effect, in milliseconds
+   * @param <J> The component type
+   * @return A SwipeView that wraps the specified view.
+   */
+  public static <J extends JComponent> SwipeView<J> wrap(J view, int durationMillis) {
+    JLayer<J> jLayer = new JLayer<>(view);
+    final SwipeView<J> ui = new SwipeView<>(view, jLayer, durationMillis);
     jLayer.setUI(ui);
     return ui;
   }
   
   private final C liveComponent;
-  private @Nullable Image priorScreen=null;
-  private @Nullable Image upcomingScreen= null;
+  private @Nullable BufferedImage priorScreen=null;
+  private @Nullable BufferedImage finalScreen= null;
   private final JLayer<C> layer;
   
   private boolean isAnimating = false;
   private SwipeDirection swipeDirection = SwipeDirection.SWIPE_RIGHT;
-  private static final int animationDurationMillis = 500;
-  private static final int maxFrames = 15;
+  private final int maxFrames;
+
   // Calculated:
-  @SuppressWarnings("FieldCanBeLocal")
-  private static final int frameMillis = animationDurationMillis/maxFrames;
+  private final int frameMillis;
   private int frame = 0;
+//  private final long startTime = System.currentTimeMillis();
   
-  private SwipeView(C view, JLayer<C> theLayer) {
+  private SwipeView(C view, JLayer<C> theLayer, int animationDurationMillis) {
     super();
     liveComponent = view;
     layer = theLayer;
+    maxFrames = (30 * animationDurationMillis) / 1000;
+    frameMillis = animationDurationMillis / maxFrames;
   }
-
-  @SuppressWarnings("WeakerAccess")
+  
   public JLayer<C> getLayer() { return layer; }
 
   /**
@@ -106,26 +157,36 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
     animate();
   }
 
+//  @SuppressWarnings({"HardCodedStringLiteral", "HardcodedFileSeparator"})
   @Override
   public void paint(final Graphics g, final JComponent c) {
     if (isAnimating) {
-      int xLimit = (c.getWidth() * frame) / maxFrames;
+      int xLimit = (c.getWidth() * SCALE * frame) / maxFrames;
       if (swipeDirection == SwipeDirection.SWIPE_LEFT) {
-        xLimit = c.getWidth() - xLimit;
+        xLimit = (c.getWidth() * SCALE) - xLimit;
       }
-      int width = c.getWidth();
-      int height = c.getHeight();
 
-      assert upcomingScreen != null;
+      int width = c.getWidth() * SCALE;
+      int height = c.getHeight() * SCALE;
+
+
+////      //noinspection UseOfSystemOutOrSystemErr
+////      System.out.printf("Dimensions:  Frame:  %d/%d (at %d)  xLimit: %4d  (%4d x %4d) (from %4d x %4d)  Animating: %b%n",
+////          frame, maxFrames, System.currentTimeMillis() - startTime, xLimit, width, height, c.getWidth(), c.getHeight(), isAnimating);
+//      if (frame < 2) {
+//        Thread.dumpStack();
+//      }
+
+      assert finalScreen != null;
       assert priorScreen != null;
       Image pScreen = Objects.requireNonNull(priorScreen);
-      Image uScreen = Objects.requireNonNull(upcomingScreen);
+      Image uScreen = Objects.requireNonNull(finalScreen);
       if (swipeDirection == SwipeDirection.SWIPE_RIGHT) {
-        g.drawImage(uScreen, 0, 0, xLimit, height, 0, 0, xLimit, height, c);
-        g.drawImage(pScreen, xLimit, 0, width, height, xLimit, 0, width, height, c);
+        g.drawImage(uScreen, 0, 0, xLimit, height, 0, 0, xLimit*SCALE, height*SCALE, c);
+        g.drawImage(pScreen, xLimit, 0, width, height, xLimit*SCALE, 0, width*SCALE, height*SCALE, c);
       } else {
-        g.drawImage(uScreen, xLimit, 0, width, height, xLimit, 0, width, height, c);
-        g.drawImage(pScreen, 0, 0, xLimit, height, 0, 0, xLimit, height, c);
+        g.drawImage(uScreen, xLimit, 0, width, height, xLimit*SCALE, 0, width*SCALE, height*SCALE, c);
+        g.drawImage(pScreen, 0, 0, xLimit, height, 0, 0, xLimit*SCALE, height*SCALE, c);
       }
     } else {
       super.paint(g, c);
@@ -138,9 +199,22 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
     frame = 0;
 
     // Save current state
-    priorScreen = new BufferedImage(liveComponent.getWidth(), liveComponent.getHeight(), BufferedImage.TYPE_INT_ARGB);
-    Graphics2D graphics2D = (Graphics2D) priorScreen.getGraphics();
-    liveComponent.paint(graphics2D);
+    int scaledWidth = liveComponent.getWidth() * SCALE;
+    
+    // if the screen size has changed, create new graphics
+    BufferedImage nonNullPriorScreen;
+    if ((priorScreen == null) || (priorScreen.getWidth() != scaledWidth)) {
+      int scaledHeight = liveComponent.getHeight() * SCALE;
+      nonNullPriorScreen = createLocalImage(scaledWidth, scaledHeight);
+      priorScreen = nonNullPriorScreen;
+      finalScreen = createLocalImage(scaledWidth, scaledHeight);
+    } else {
+      nonNullPriorScreen = priorScreen;
+    }
+
+    Graphics2D graphics2D = (Graphics2D) nonNullPriorScreen.getGraphics();
+    graphics2D.scale(SCALE, SCALE);
+    liveComponent.paint(graphics2D); // paint the current state of liveComponent into the image
     graphics2D.dispose();
   }
 
@@ -155,13 +229,20 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
         timer.stop();
       }
     };
+    
+    BufferedImage fScreen = (Objects.requireNonNull(finalScreen)); // Only needed for nullness checker. It can't be null.
     timer.addActionListener(actionListener);
-    upcomingScreen = new BufferedImage(liveComponent.getWidth(), liveComponent.getHeight(), BufferedImage.TYPE_INT_ARGB);
-    Graphics2D graphics2D = (Graphics2D) upcomingScreen.getGraphics();
-    liveComponent.paint(graphics2D);
+    Graphics2D graphics2D = GraphicsEnvironment.getLocalGraphicsEnvironment().createGraphics(fScreen);
+    graphics2D.scale(SCALE, SCALE);
+    liveComponent.paint(graphics2D); // paint the upcoming state of liveComponent into the image
     graphics2D.dispose();
     
     timer.start();
+  }
+
+  private static @NonNull BufferedImage createLocalImage(int width, int height) {
+    GraphicsEnvironment graphicsEnvironment = GraphicsEnvironment.getLocalGraphicsEnvironment();
+    return graphicsEnvironment.getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(width, height);
   }
 
   /**
@@ -229,7 +310,7 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
         fullOperation = () -> swipeRight(operation);
         break;
       default:
-        throw new AssertionError(String.format("Unsupported Swipe Direction: %s", swipeDirection));
+        throw new AssertionError(String.format("Unsupported Swipe Direction: %s", swipeDirection)); //NON-NLS
     }
     return fullOperation;
   }
@@ -381,7 +462,7 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
   
   private class KeyStrokeTracker {
     private boolean active = false;
-    private Timer timer = new Timer(frameMillis, null);
+    private final Timer timer = new Timer(frameMillis, null);
 //    private final SwipeDirection direction;
 
     KeyStrokeTracker(Runnable operation, SwipeDirection swipeDirection) {

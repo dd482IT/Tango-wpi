@@ -1,4 +1,6 @@
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import javax.swing.border.Border;
 import java.awt.Component;
 import java.awt.Container;
@@ -18,3 +20,11 @@ public class JOptionPane {
 public class JComponent extends Container {
   public void setBorder(@Nullable Border border);
 }
+
+package java.awt;
+
+  public class Container extends Component {
+    public void add(@UnknownInitialization Container this, @NonNull Component component, @NonNull Object constraint);
+    public Component add(@UnknownInitialization Container this, String name, Component comp);
+    public void add(@UnknownInitialization Container this, Component comp, Object constraints);
+  }
