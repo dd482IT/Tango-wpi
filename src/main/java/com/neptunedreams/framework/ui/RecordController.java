@@ -36,7 +36,7 @@ public final class RecordController<R, PK, F extends DBField> implements RecordM
   @NotOnlyInitialized
   private final RecordModel<R> model;
 
-//  @SuppressWarnings("argument.type.incompatible")
+  @SuppressWarnings("argument.type.incompatible")
   private RecordController(
       Dao<R, PK, F> theDao,
       RecordSelectionModel<? extends R> recordSelectionModel,
@@ -48,6 +48,7 @@ public final class RecordController<R, PK, F extends DBField> implements RecordM
     this.recordSelectionModel = recordSelectionModel;
     model = new RecordModel<>(recordConstructor, getIdFunction);
     order = initialOrder;
+    AutoSave.engage(this); // warning suppressed here.
   }
 
   /**
@@ -93,8 +94,13 @@ public final class RecordController<R, PK, F extends DBField> implements RecordM
   }
 
   private void loadNewRecord(@NonNull R record) {
+    saveCurrentRecord();
+    MasterEventBus.postChangeRecordEvent(record);
+  }
+
+  void saveCurrentRecord() {
     R currentRecord = recordSelectionModel.getCurrentRecord(); // Move this back to where the comment is
-    
+
     if (recordSelectionModel.isRecordDataModified()) {
       try {
         MasterEventBus.postLoadUserData();
@@ -103,7 +109,6 @@ public final class RecordController<R, PK, F extends DBField> implements RecordM
         ErrorReport.reportException("Insert", e);
       }
     }
-    MasterEventBus.postChangeRecordEvent(record);
   }
 
   /**

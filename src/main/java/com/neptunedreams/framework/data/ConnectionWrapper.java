@@ -20,9 +20,10 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 
 /**
- * <p>Created by IntelliJ IDEA.
- * <p>Date: 11/28/17
- * <p>Time: 11:22 PM
+ * <p>Created for adding a dumpStack() call to the close method.</p>
+ * <p>Created by IntelliJ IDEA.</p>
+ * <p>Date: 11/28/17</p>
+ * <p>Time: 11:22 PM</p>
  *
  * @author Miguel Mu\u00f1oz
  */
