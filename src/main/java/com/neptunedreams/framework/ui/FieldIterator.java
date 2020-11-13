@@ -1,5 +1,6 @@
 package com.neptunedreams.framework.ui;
 
+import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -12,6 +13,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import javax.swing.SwingUtilities;
+import javax.swing.text.BadLocationException;
 import javax.swing.text.JTextComponent;
 import org.checkerframework.checker.initialization.qual.UnderInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -60,7 +62,7 @@ public class FieldIterator {
     isEmpty = searchTermElements.isEmpty();
   }
 
-  @RequiresNonNull("componentList")
+  @RequiresNonNull("componentList") // NON-NLS
   private Set<SearchTermElement> assembleIterator(@UnderInitialization FieldIterator this, String... terms) {
     // pack all Strings into a TreeSet to eliminate duplicates and pre-sort them by length
     TreeSet<String> allTerms = Arrays.stream(terms)
@@ -159,7 +161,13 @@ public class FieldIterator {
     JTextComponent container = componentList.get(element.componentIndex);
     int index = element.charIndex;
     container.select(index, index + element.termUpperCase.length());
-    SwingUtilities.invokeLater(container::requestFocus);
+    try {
+      Rectangle selectedRect = container.modelToView(index);
+      container.scrollRectToVisible(selectedRect);
+    } catch (BadLocationException e) {
+      e.printStackTrace();
+    }
+    SelectionViewControl.showInComponent(container);
   }
   
   public int getId() {
