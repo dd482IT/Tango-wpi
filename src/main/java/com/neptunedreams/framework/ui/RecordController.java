@@ -135,6 +135,26 @@ public final class RecordController<R, PK, F extends DBField> implements RecordM
   }
 
   /**
+   * Copies the current record into a new blank record. Fields to copy are determined by the BiConsumer {@code copyMethodFromTo}
+   * @param fieldsToCopy A list of FieldBindings contianing the field values that need to be copied to the new record. 
+   */
+  public void copyCurrentRecord(Collection<FieldBinding.EditableFieldBinding<R, ?, ?>> fieldsToCopy) {
+    int currentIndex = model.getRecordIndex();
+    addBlankRecord();
+    R original = model.getRecordAt(currentIndex);
+    R newModel = model.getFoundRecord();
+    for (FieldBinding.EditableFieldBinding<R, ?, ?> binding: fieldsToCopy) {
+      copyValue(original, newModel, binding);
+    }
+  }
+  
+  private <V> void copyValue(R original, R newModel, FieldBinding.EditableFieldBinding<R, V, ?> binding) {
+    V value = binding.getValue(original);
+    binding.setValue(newModel, value);
+    binding.prepareEditor(newModel);
+  }
+
+  /**
    * This executes on the event thread. It gets called when a search is done and new records are set.
    * @param theFoundItems
    */
