@@ -1,9 +1,16 @@
 package com.neptunedreams.framework.ui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.FlowLayout;
+import java.awt.Image;
+import java.awt.Toolkit;
+import java.awt.image.FilteredImageSource;
+import java.awt.image.ImageProducer;
+import java.awt.image.RGBImageFilter;
 import java.beans.PropertyChangeListener;
 import java.util.function.Supplier;
+import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -200,4 +207,155 @@ public enum SwingUtils {
     };
     component.addAncestorListener(ancestorListener);
   }
+
+  /**
+   * Recolor an Icon. This grays out the icon, then applies the given color to the different
+   * gray levels to produce new colors of the same hue.
+   *
+   * @param rawIcon The icon to recolor
+   * @param color   The color to give it.
+   * @return A new Icon that looks like the old one, but is entirely of the new color.
+   */
+  public static ImageIcon recolor(ImageIcon rawIcon, final Color color) {
+    @SuppressWarnings("UseOfClone") RGBImageFilter filter = new RGBImageFilter() {
+      /**
+       * Overrides {@code RGBImageFilter.filterRGB}.
+       */
+      @SuppressWarnings({"NumericCastThatLosesPrecision", "MagicNumber"})
+      @Override
+      public int filterRGB(int x, int y, int rgb) {
+        // This is adapted from the javax.swing.GrayFilter class, which uses the NTSC formula to gray out a color.
+
+        // The NTSC formula to gray out a color applies r*0.3, g*0.59, and b*0.11, to get
+        // a new value that is used for R, G, and B. I raise those three constants by a
+        // factor of 0.4 according to this formula: c' = (1-c)*r + c, where r is 0.4.
+        // This reduces to c' = r - r*c + c. Applying that gives me the three values used below.
+        int gray = (int) (((0.580 * ((rgb >> 16) & 0xff)) +
+            (0.754 * ((rgb >> 8) & 0xff)) +
+            (0.466 * (rgb & 0xff))) / 3);
+
+        if (gray < 0) { gray = 0; }
+        // Now that we have a gray, use the input color to produce a new color of the same hue.
+        int red = (gray * color.getRed()) / 100;
+        int green = (gray * color.getGreen()) / 100;
+        int blue = (gray * color.getBlue()) / 100;
+        if (red > 255) { red = 255; }
+        if (green > 255) { green = 255; }
+        if (blue > 255) { blue = 255; }
+        //noinspection OverlyComplexBooleanExpression
+        return (rgb & 0xff000000) | (red << 16) | (green << 8) | blue;
+      }
+
+      @SuppressWarnings("UseOfClone")
+      @Override
+      public RGBImageFilter clone() {
+        return (RGBImageFilter) super.clone();
+      }
+    };
+    ImageProducer prod = new FilteredImageSource(rawIcon.getImage().getSource(), filter);
+    Image coloredImage = Toolkit.getDefaultToolkit().createImage(prod);
+    return new ImageIcon(coloredImage);
+  }
+
+  /**
+   * Shift the hue of an image by a specified amount. To shift from red to green or green to blue, use a shift of 85. 
+   * To shift in the opposite direction, use 170.
+   * @param rawIcon The original icon to recolor.
+   * @param shift The amount to shift the hue, where 0 or 256 leave the hue unchanged. 
+   * @return A recolored icon.
+   */
+  @SuppressWarnings("CloneableClassWithoutClone")
+  public static ImageIcon shiftHue(ImageIcon rawIcon, final int shift) {
+    float[] hsb = new float[3];
+    RGBImageFilter filter = new RGBImageFilter() {
+      @SuppressWarnings("MagicNumber")
+      @Override
+      public int filterRGB(int x, int y, int rgb) {
+        int red = (0xff_0000 & rgb) >> 16;
+        int grn = (0x00_ff00 & rgb) >> 8;
+        int blu = (0x00_00ff & rgb);
+        int alpha = 0xff000000 & rgb; 
+        Color.RGBtoHSB(red, grn, blu, hsb);
+        @SuppressWarnings("NumericCastThatLosesPrecision")
+        int hue = (int) (hsb[0] * 256);
+        float newHue = ((hue + shift) % 256) / 256.0F;
+        // HSBtoRGB creates a color with an alpha of 0xFF
+        final int newColor = Color.HSBtoRGB(newHue, hsb[1], hsb[2]) & 0x00ff_ffff; // strip out alpha value of 0xFF
+        return alpha | newColor;
+      }
+    };
+    ImageProducer prod = new FilteredImageSource(rawIcon.getImage().getSource(), filter);
+    Image coloredImage = Toolkit.getDefaultToolkit().createImage(prod);
+    return new ImageIcon(coloredImage);
+  }
+
+  /**
+   * Prints out a distribution of the different hues of an image. This is an aid to determining the best hue to use in the recolor method.
+   * It would never be used in an actual application, but it's useful during the development phase.
+   * @param icon The icon to examine.
+   */
+  @SuppressWarnings({"UseOfSystemOutOrSystemErr", "argument.type.incompatible", "MagicNumber", "NumericCastThatLosesPrecision"})
+  public static void colorHistogram(ImageIcon icon) {
+    int red = 0x00FF0000;
+    int green = 0x0000FF00;
+    int blue = 0x000000FF;
+    final float redHue = getHue(new Color(red));
+    final float grnHue = getHue(new Color(green));
+    final float bluHue = getHue(new Color(blue));
+    final int r = (int) (redHue * 256);
+    final int g = (int) (grnHue * 256);
+    final int b = (int) (bluHue * 256);
+    System.out.printf("Red: %10.8f -> %3d%nGrn: %10.8f -> %3d%nBlu: %10.8f -> %3d%n%n", redHue, r, grnHue, g, bluHue, b); // NON-NLS
+    
+    int[] hues = new int[256];
+    float[] hsb = new float[3];
+    @SuppressWarnings("CloneableClassWithoutClone")
+    RGBImageFilter filter = new RGBImageFilter() {
+      @Override
+      public int filterRGB(final int x, final int y, final int rgb) {
+        final Color color = new Color(rgb);
+        Color.RGBtoHSB(color.getRed(), color.getGreen(), color.getBlue(), hsb);
+        float fHue = getHue(color);
+        int hue = (int) (fHue * 256);
+        hues[hue] += (int) getWeight(color);
+        return rgb;
+      }
+    };
+    System.out.printf("Icon size: (%d x %d)%n", icon.getIconWidth(), icon.getIconHeight()); // NON-NLS
+    ImageProducer prod = new FilteredImageSource(icon.getImage().getSource(), filter);
+
+    // instantiates the image, but doesn't load it.
+    Image result = Toolkit.getDefaultToolkit().createImage(prod);
+    
+    // Force the image to load
+    Toolkit.getDefaultToolkit().prepareImage(result, icon.getIconWidth(), icon.getIconHeight(), null);
+
+    System.out.printf("Histogram Data model:%n"); // NON-NLS
+    for (int i=0; i<hues.length; ++i) {
+      System.out.printf("%3d: %5d%n", i, hues[i]); // NON-NLS
+    }
+  }
+
+  /**
+   * Get the hue of a color as a float.
+   * @param color The color
+   * @return The color's hue, as a float with a range from 0.0 to 1.0
+   */
+  public static float getHue(Color color) {
+    float[] hsb = new float[3];
+    Color.RGBtoHSB(color.getRed(), color.getGreen(), color.getBlue(), hsb);
+    return hsb[0];
+  }
+
+  /**
+   * Get the weight of a color's hue, for statistical purposes, as a float in the range from 0.0 to 255.0
+   * @param color The color to weight
+   * @return The weight of the hue, which is the alpha channel, multiplied by the square of the brightness.
+   */
+  public static float getWeight(Color color) {
+    float[] hsb = new float[3];
+    Color.RGBtoHSB(color.getRed(), color.getGreen(), color.getBlue(), hsb);
+    return color.getAlpha() * hsb[2] * hsb[2];
+  }
+
 }
