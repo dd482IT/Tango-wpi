@@ -18,7 +18,6 @@ import javax.swing.JTextArea;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
 import javax.swing.text.Caret;
-import javax.swing.text.DefaultCaret;
 import javax.swing.text.JTextComponent;
 
 /**
@@ -28,7 +27,7 @@ import javax.swing.text.JTextComponent;
  *
  * @author Miguel Mu\u00f1oz
  */
-public enum SwingUtils {
+public enum TangoUtils {
   ;
 
   /**
@@ -100,6 +99,28 @@ public enum SwingUtils {
   }
 
   /**
+   * Wrap the JTextField in a JScrollPane and configure it for natural language text, wrapping lines on word
+   * boundaries, with a vertical scroll bar, and using a proper platform-independent Carat.
+   * @param wrappedField The JTextField to configure and wrap
+   * @return a JScrollPane wrapping the newly configured text area.
+   */
+  public static JComponent prepareForNaturalText(JTextArea wrappedField) {
+    return prepareForNaturalText(wrappedField, StandardCaret::new);
+  }
+
+  /**
+   * Wrap the JTextField in a JScrollPane and configure it for natural language text, wrapping lines on word
+   * boundaries, and using a proper platform-independent Carat.
+   * @param caretSupplier The Supplier for a Carat of your choice.
+   * @param wrappedField The JTextArea to configure and wrap
+   * @return a JScrollPane wrapping the now configured text area.
+   */
+  public static JComponent prepareForNaturalText(JTextArea wrappedField, Supplier<? extends Caret> caretSupplier) {
+    installCustomCaret(caretSupplier, wrappedField);
+    return scrollArea(wrappedField);
+  }
+
+  /**
    * Wrap the specified component inside a JScrollPane, configuring it to have a vertical scrollbar but no horizontal 
    * scrollbar. This is the best configuration for multi-line text components like JTextArea, which are designed to 
    * wrap text to the current size under these conditions. To configure a JTextArea properly, you should really call 
@@ -148,12 +169,12 @@ public enum SwingUtils {
    * On the Mac, the AquaCaret will get installed. This caret has an annoying feature of selecting all the text on a
    * focus-gained event. If this isn't bad enough, it also fails to check temporary vs permanent focus gain, so it
    * gets triggered on a focused JTextComponent whenever a menu is released! This method removes the Aqua Caret and
-   * installs a standard caret. It's only needed on the Mac, but it's safe to use on any platform.
+   * installs a StandardCaret. It's only needed on the Mac, but it's safe to use on any platform.
    *
    * @param components The components to repair. This is usually a JTextField or JTextArea.
    */
   public static void installStandardCaret(JTextComponent... components) {
-    installCustomCaret(DefaultCaret::new, components);
+    installCustomCaret(StandardCaret::new, components);
   }
 
   /**
@@ -177,7 +198,7 @@ public enum SwingUtils {
     final Caret priorCaret = component.getCaret();
     int blinkRate = priorCaret.getBlinkRate();
     if (priorCaret instanceof PropertyChangeListener) {
-      // com.apple.laf.AquaCaret, the troublemaker, installs this listener which doesn't get removed when the Caret 
+      // For example, com.apple.laf.AquaCaret, the troublemaker, installs this listener which doesn't get removed when the Caret 
       // gets uninstalled.
       component.removePropertyChangeListener((PropertyChangeListener) priorCaret);
     }

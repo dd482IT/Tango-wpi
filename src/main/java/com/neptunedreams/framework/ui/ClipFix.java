@@ -86,7 +86,7 @@ public enum ClipFix {
    * 
    * This should be done immediately before pasting text. This will be done automatically if the
    * JTextArea was created using SwingUtils.createClipboardCleaningTextArea()
-   * @see SwingUtils#createClipboardCleaningTextArea(int, int) 
+   * @see TangoUtils#createClipboardCleaningTextArea(int, int) 
    */
   public static void htmlToText() {
     String htmlText = getHtmlAsText();

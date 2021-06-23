@@ -11,26 +11,33 @@ import javax.swing.text.Position;
 import javax.swing.text.Utilities;
 
 /**
+ * <p>Implements Standard rules for extending the selection, consistent with the standard behavior for extending the 
+ * selection in all word processors, browsers, and other text editing tools, on all platforms. Without this, Swing's
+ * behavior on extending the selection is inconsistent with all other text editing tools.
+ * </p><p>
  * Swing components don't handle selectByWord the way most UI text components do. If you double-click on a word, they
  * will all select the entire word. But if you do a click-and-drag, most components will (a) select the entire clicked
  * word, and (b) extend the selection a word at a time as the user drags across the text. And if you double- click on a
  * word and follow that with a shift-click, most components will also extend the selection a word at a time.  Swing 
  * components handle a double-clicked word the standard way, but do not handle click-and-drag or shift-click correctly.
- * This caret, which replaces the standard DefaultCaret, fixes this.
- * <p>Created by IntelliJ IDEA.
- * <p>Date: 2/23/20
- * <p>Time: 10:58 PM
+ * This caret, which replaces the standard DefaultCaret, fixes this.</p>
+ * <p>Created by IntelliJ IDEA.</p>
+ * <p>Date: 2/23/20</p>
+ * <p>Time: 10:58 PM</p>
  *
  * @author Miguel Mu\u00f1oz
  */
-public class EnhancedCaret extends DefaultCaret {
+public class StandardCaret extends DefaultCaret {
   // In the event of a double-click, these are the positions of the low end and high end of the word that was clicked.
   private int highMark;
   private int lowMark;
   private boolean selectingByWord = false; // true when the last selection was done by word.
   private boolean selectingByRow = false; // true when the last selection was done by paragraph. 
 
-  public EnhancedCaret() {
+  /**
+   * Instantiate an EnhancedCaret.
+   */
+  public StandardCaret() {
     super();
   }
 
@@ -39,7 +46,7 @@ public class EnhancedCaret extends DefaultCaret {
    * @param component The component to use the EnhancedCaret.
    */
   public void installInto(JTextComponent component) {
-    SwingUtils.replaceCaret(component, this);
+    TangoUtils.replaceCaret(component, this);
   }
 
   @Override
