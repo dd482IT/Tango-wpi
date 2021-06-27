@@ -36,7 +36,7 @@ public final class RecordController<R, PK, F extends DBField> implements RecordM
   @NotOnlyInitialized
   private final RecordModel<R> model;
 
-  @SuppressWarnings("argument.type.incompatible")
+  @SuppressWarnings("methodref.receiver.bound.invalid")
   private RecordController(
       Dao<R, PK, F> theDao,
       RecordSelectionModel<? extends R> recordSelectionModel,
@@ -48,7 +48,7 @@ public final class RecordController<R, PK, F extends DBField> implements RecordM
     this.recordSelectionModel = recordSelectionModel;
     model = new RecordModel<>(recordConstructor, getIdFunction);
     order = initialOrder;
-    AutoSave.engage(this); // warning suppressed here.
+    AutoSave.engage(this::saveCurrentRecord); // warning suppressed here.
   }
 
   /**
