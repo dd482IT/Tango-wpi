@@ -394,6 +394,8 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
       }
     });
   }
+  
+  public C getLiveComponent() { return liveComponent; }
 
   /**
    * This lets you assign an action to a button that executes on mouseStillDown, but only when animation has completed.

@@ -1,5 +1,6 @@
 package com.neptunedreams.framework.ui;
 
+import java.awt.Color;
 import java.awt.Component;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -19,10 +20,17 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  */
 @SuppressWarnings("unused")
 public abstract class FieldBinding<R, T, C extends Component> {
-  private Function<? super R, ? extends T> getter;
-  private C editor;
+  private final Function<? super R, ? extends T> getter;
+  private final C editor;
   private final boolean isEditable;
+  private static final Color DISABLED_COLOR = new Color(245, 245, 245);
 
+  /**
+   * Construct a FieldBinding
+   * 
+   * @param aGetter The getter
+   * @param aField The display component
+   */
   protected FieldBinding(Function<? super R, ? extends T> aGetter, C aField) {
     getter = aGetter;
     editor = aField;
@@ -119,16 +127,18 @@ public abstract class FieldBinding<R, T, C extends Component> {
    * IllegalStateException, but EditableFieldBindings return this.
    * @return this, if editable. Throws IllegalStateException if not.
    */
-  public EditableFieldBinding<R, T, C> getEditableBinding() {
+  public EditableFieldBinding<R, T, ?> getEditableBinding() {
     throw new IllegalStateException("Not implemented for non-editable binding");
   }
   
-  public abstract static class EditableFieldBinding<R, T, C extends Component> extends FieldBinding<R, T, C> {
-    private BiConsumer<? super R, ? super T> setter;
+  public abstract static class EditableFieldBinding<R, T, C extends JTextComponent> extends FieldBinding<R, T, C> {
+    private final BiConsumer<? super R, ? super T> setter;
+    private final boolean editableState = false;
 
     protected EditableFieldBinding(Function<? super R, ? extends T> aGetter, BiConsumer<? super R, ? super T> aSetter, C aField) {
       super(aGetter, aField);
       setter = aSetter;
+      aField.setEditable(false);
     }
 
     @Override
@@ -155,6 +165,16 @@ public abstract class FieldBinding<R, T, C extends Component> {
       assert record != null : "Null record";
       assert value != null : "Null value";
       setter.accept(record, clean(value));
+    }
+    
+    public boolean getEditableState() {
+      return editableState;
+    }
+    
+    public void setEditableState(boolean editableState) {
+      final C editor = getEditor();
+      editor.setEditable(editableState);
+      editor.setBackground(editableState? Color.white : DISABLED_COLOR);
     }
 
     @Override
