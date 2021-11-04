@@ -168,8 +168,9 @@ public enum TangoUtils {
   /**
    * On the Mac, the AquaCaret will get installed. This caret has an annoying feature of selecting all the text on a
    * focus-gained event. If this isn't bad enough, it also fails to check temporary vs permanent focus gain, so it
-   * gets triggered on a focused JTextComponent whenever a menu is released! This method removes the Aqua Caret and
-   * installs a StandardCaret. It's only needed on the Mac, but it's safe to use on any platform.
+   * gets triggered on a focused JTextComponent whenever a menu is released, which will re-select all the text! This
+   * method removes the Aqua Caret and installs a StandardCaret. It's only needed on the Mac, but it's safe to use 
+   * on any platform.
    *
    * @param components The components to repair. This is usually a JTextField or JTextArea.
    */

@@ -3,8 +3,10 @@ package com.neptunedreams.framework.ui;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
+import java.beans.PropertyChangeListener;
 import javax.swing.SwingUtilities;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.Caret;
 import javax.swing.text.DefaultCaret;
 import javax.swing.text.JTextComponent;
 import javax.swing.text.Position;
@@ -94,18 +96,19 @@ public class StandardCaret extends DefaultCaret {
   private MouseEvent getRevisedMouseEvent(final MouseEvent e, final BiTextFunction getStart, final BiTextFunction getEnd) {
     int newPos;
     int pos = getPos(e);
+    final JTextComponent textComponent = getComponent();
     try {
       if (pos > highMark) {
-        newPos = getEnd.loc(getComponent(), pos);
+        newPos = getEnd.loc(textComponent, pos);
         setDot(lowMark);
       } else if (pos < lowMark) {
-        newPos = getStart.loc(getComponent(), pos);
+        newPos = getStart.loc(textComponent, pos);
         setDot(highMark);
       } else {
         if (getMark() == lowMark) {
-          newPos = getEnd.loc(getComponent(), pos);
+          newPos = getEnd.loc(textComponent, pos);
         } else {
-          newPos = getStart.loc(getComponent(), pos);
+          newPos = getStart.loc(textComponent, pos);
         }
         pos = -1; // ensure we make a new event
       }
@@ -202,7 +205,34 @@ public class StandardCaret extends DefaultCaret {
     }
   }
 
-  // For eventual use by a "select paragraph" feature:
+  /**
+   * Install a new StandardCaret into a JTextComponent, such as a JTextField or JTextArea, and starts the Caret blinking using the same
+   * blink-rate as the previous Caret.
+   * @param component The JTextComponent subclass
+   */
+  public static void installStandardCaret(JTextComponent component) {
+    replaceCaret(component, new StandardCaret());
+  }
+
+  /**
+   * Installs the specified Caret into the JTextComponent, and starts the Caret blinking using the same blink-rate as the previous Caret.
+   *
+   * @param component The text component to get the new Caret
+   * @param caret     The new Caret to install
+   */
+  public static void replaceCaret(final JTextComponent component, final Caret caret) {
+    final Caret priorCaret = component.getCaret();
+    int blinkRate = priorCaret.getBlinkRate();
+    if (priorCaret instanceof PropertyChangeListener) {
+      // For example, com.apple.laf.AquaCaret, the troublemaker, installs this listener which doesn't get removed when the Caret 
+      // gets uninstalled.
+      component.removePropertyChangeListener((PropertyChangeListener) priorCaret);
+    }
+    component.setCaret(caret);
+    caret.setBlinkRate(blinkRate); // Starts the new caret blinking.
+  }
+
+// For eventual use by a "select paragraph" feature:
 //  private static final char NEW_LINE = '\n';
 //  private static int getParagraphStart(JTextComponent component, int position) {
 //    return component.getText().substring(0, position).lastIndexOf(NEW_LINE);
