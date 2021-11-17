@@ -6,6 +6,7 @@ import java.beans.PropertyChangeListener;
 import java.util.LinkedList;
 import java.util.List;
 import javax.swing.FocusManager;
+import javax.swing.SwingUtilities;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
 import javax.swing.text.JTextComponent;
@@ -40,7 +41,7 @@ public enum SelectionSpy implements CaretListener {
 
   SelectionSpy() {
     final DefaultKeyboardFocusManager focusManager = FocusManager.getCurrentManager();
-    focusManager.addPropertyChangeListener("focusOwner", new PListener());
+    focusManager.addPropertyChangeListener("focusOwner", new FocusOwnerListener());
     selectedText=""; // Checker framework needs this initialized here instead of in declaration, probably because this is an enum.
   }
   
@@ -66,6 +67,10 @@ public enum SelectionSpy implements CaretListener {
     for (FocusInTextFieldListener listener : focusInTextFieldListeners) {
       listener.respond(focusInTextField);
     }
+  }
+  
+  public boolean isFocusedTextFieldEditable() {
+    return (focusedTextComponent != null) && focusedTextComponent.isEditable();
   }
 
   /**
@@ -157,33 +162,46 @@ public enum SelectionSpy implements CaretListener {
   }
   
   private @Nullable JTextComponent getFocusedTextComponent() { return focusedTextComponent; }
-  private void setFocusedTextComponent(@Nullable JTextComponent component) { focusedTextComponent = component; }
+  private void setFocusedTextComponent(@Nullable JTextComponent component) {
+    focusedTextComponent = component;
+  }
   
-  private class PListener implements PropertyChangeListener {
+  private class FocusOwnerListener implements PropertyChangeListener {
     @Override
     public void propertyChange(final PropertyChangeEvent evt) {
+      assert SwingUtilities.isEventDispatchThread() 
+          : String.format("Thread %s Daemon = %b", Thread.currentThread().getName(), Thread.currentThread().isDaemon());
       Object newValue = evt.getNewValue();
-      spy.fireFocusInTextFieldListeners();
+      boolean selectionExists;
       if (newValue instanceof JTextComponent) {
         JTextComponent textComponent = (JTextComponent) newValue;
-        reassignListener(textComponent);
-        spy.fireSelectionExistsListeners(!selectedText.isEmpty());
+        reassignCaretListener(textComponent);
+        selectionExists = !selectedText.isEmpty();
       } else {
-        reassignListener(null);
-        spy.fireSelectionExistsListeners(false);
+        reassignCaretListener(null);
+        selectionExists = false;
       }
+      spy.fireFocusInTextFieldListeners();
+      spy.fireSelectionExistsListeners(selectionExists);
     }
 
-    private void reassignListener(@Nullable JTextComponent component) {
+    /**
+     * This keeps the CaretListener on the component with the focus.
+     * It removes the caret listener from a textComponent that just lost the focus. 
+     * Also, it adds the CaretListener to the textComponent that gained focus.
+     * It's careful to check if either of these exist.
+     * @param textComponent The JTextComponent that gained the focus, or null if a JTextComponent did not gain the focus.
+     */
+    private void reassignCaretListener(@Nullable JTextComponent textComponent) {
       SelectionSpy sSpy = SelectionSpy.spy;
       JTextComponent focusedComponent = sSpy.getFocusedTextComponent();
       if (focusedComponent != null) {
         focusedComponent.removeCaretListener(sSpy);
       }
-      sSpy.setFocusedTextComponent(component);
+      sSpy.setFocusedTextComponent(textComponent);
       
-      if (component != null) {
-        component.addCaretListener(sSpy);
+      if (textComponent != null) {
+        textComponent.addCaretListener(sSpy);
       }
     }
   }
