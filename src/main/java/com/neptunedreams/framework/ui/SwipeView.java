@@ -49,7 +49,7 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
     GraphicsDevice defaultScreenDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
     String javaVersion = System.getProperty("java.version");
     
-    // The default transform for the device doesn't work on Java 8. It always returns the identity tranform, regardless of the screen.
+    // The default transform for the device doesn't work on Java 8. It always returns the identity transform, regardless of the screen.
     // So we use this kludge for anything before Java 1.9.
     if (javaVersion.compareTo("1.9") < 0) {
       // 1.8 or before
@@ -112,7 +112,6 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
   // Calculated:
   private final int frameMillis;
   private int frame = 0;
-//  private final long startTime = System.currentTimeMillis();
   
   private SwipeView(C view, JLayer<C> theLayer, int animationDurationMillis) {
     super();
@@ -157,7 +156,6 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
     animate();
   }
 
-//  @SuppressWarnings({"HardCodedStringLiteral", "HardcodedFileSeparator"})
   @Override
   public void paint(final Graphics g, final JComponent c) {
     if (isAnimating) {
@@ -168,14 +166,6 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
 
       int width = c.getWidth() * SCALE;
       int height = c.getHeight() * SCALE;
-
-
-////      //noinspection UseOfSystemOutOrSystemErr
-////      System.out.printf("Dimensions:  Frame:  %d/%d (at %d)  xLimit: %4d  (%4d x %4d) (from %4d x %4d)  Animating: %b%n",
-////          frame, maxFrames, System.currentTimeMillis() - startTime, xLimit, width, height, c.getWidth(), c.getHeight(), isAnimating);
-//      if (frame < 2) {
-//        Thread.dumpStack();
-//      }
 
       assert finalScreen != null;
       assert priorScreen != null;
@@ -347,7 +337,7 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
    * This is intended only for keystrokes that already have defined actions for JTextComponents, such as the arrow keys.
    * @param key The key value, from constants defined in KeyEvent, such as KeyEvent.VK_X
    * @param modifiers The modifiers
-   * @param name The name, which should be unique
+   * @param name The name, which should be unique for each KeyStroke action. This name gets used by the InputMap and ActionMap.
    * @param operation The operation to perform
    * @param swipeDirection the swipe direction
    * @see java.awt.event.KeyEvent
@@ -465,7 +455,6 @@ public final class SwipeView<C extends JComponent> extends LayerUI<C> {
   private class KeyStrokeTracker {
     private boolean active = false;
     private final Timer timer = new Timer(frameMillis, null);
-//    private final SwipeDirection direction;
 
     KeyStrokeTracker(Runnable operation, SwipeDirection swipeDirection) {
       ActionListener actionListener = (e) -> {
