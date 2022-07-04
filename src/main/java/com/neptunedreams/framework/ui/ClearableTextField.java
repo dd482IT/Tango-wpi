@@ -53,7 +53,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author Miguel Mu\u00f1oz
  */
-@SuppressWarnings({"NumericCastThatLosesPrecision", "HardCodedStringLiteral", "MagicNumber", "UseOfSystemOutOrSystemErr"})
+@SuppressWarnings({"NumericCastThatLosesPrecision", "HardCodedStringLiteral", "MagicNumber", "UseOfSystemOutOrSystemErr", "RedundantSuppression"})
 public class ClearableTextField extends JPanel {
   private static final LineBorder buttonBorder = new LineBorder(Color.lightGray, 1);
   @NonNull
@@ -124,7 +124,7 @@ public class ClearableTextField extends JPanel {
       }
     };
     tField.getDocument().addDocumentListener(documentListener);
-    button.addActionListener(e -> tField.setText(""));
+    button.addActionListener(e -> clear(tField));
     button.setEnabled(false);
     Box box = new Box(BoxLayout.Y_AXIS);
     box.add(Box.createVerticalGlue());
@@ -133,13 +133,17 @@ public class ClearableTextField extends JPanel {
     return box;
   }
   
+  private static void clear(JTextField tField) {
+    tField.setText("");
+    tField.requestFocus();
+  }
+
   private Icon makeXIcon(@UnderInitialization ClearableTextField this, @NonNull final JTextField tField) {
     return new Icon() {
       private int size = -1;
       
       // Warning. Support for changing the font doesn't really work. 
       private final PropertyChangeListener pcl = evt -> {
-        System.out.printf("Font Change detected. PriorSize = %d%n", size);
         // replace previous clear box.
         add(BorderLayout.LINE_END, makeClearBox(tField));
       };
@@ -152,8 +156,6 @@ public class ClearableTextField extends JPanel {
           Insets fi = tField.getBorder().getBorderInsets(tField); // field insets
           Insets bi = button.getBorder().getBorderInsets(button); // button insets
           final int newSize = tField.getHeight() - (fi.top - bi.top) - (fi.bottom - bi.bottom);
-          System.out.printf("%s: size = %d  |  newSize: %d = %d - (%d - %d) - (%d - %d)%n",
-              dim, size, newSize, tField.getHeight(), fi.top, bi.top, fi.bottom, bi.bottom);
           if (newSize > 0) {
             size = newSize;
           }
